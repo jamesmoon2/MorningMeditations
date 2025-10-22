@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+*.py[cod]
+*$py.class
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+
+# AWS
+response.json
+
+# Environment
+.env
+*.env
+
+# Logs
+*.log

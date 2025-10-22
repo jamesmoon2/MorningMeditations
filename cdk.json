@@ -1,0 +1,28 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "**/*.pyc",
+      ".git/**",
+      ".venv/**",
+      "prd.md",
+      "projectplan.md"
+    ]
+  },
+  "context": {
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": ["aws"],
+    "aws-cdk:enableDiffNoFail": "true",
+    "@aws-cdk/core:stackRelativeExports": "true",
+    "anthropic_api_key": "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY",
+    "sender_email": "reflections@jamescmooney.com",
+    "sender_domain": "jamescmooney.com",
+    "initial_recipient": "jamesmoon2@gmail.com"
+  }
+}
