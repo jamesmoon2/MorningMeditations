@@ -1,0 +1,2 @@
+# Anthropic API Client
+anthropic>=0.18.0
