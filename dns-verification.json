@@ -1,0 +1,11 @@
+{
+  "Changes": [{
+    "Action": "CREATE",
+    "ResourceRecordSet": {
+      "Name": "_amazonses.jamescmooney.com",
+      "Type": "TXT",
+      "TTL": 1800,
+      "ResourceRecords": [{"Value": "\"WCj6eK5B2kelrUY7keoPvrZfFPYPM2m38eX32uqcPH8=\""}]
+    }
+  }]
+}

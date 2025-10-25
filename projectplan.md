@@ -168,7 +168,7 @@ anthropic>=0.18.0
 aws configure
 # Enter AWS Access Key ID
 # Enter AWS Secret Access Key
-# Default region: us-west-2
+# Default region: us-east-1
 # Default output format: json
 ```
 
@@ -179,7 +179,7 @@ aws configure
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # Bootstrap CDK
-cdk bootstrap aws://$ACCOUNT_ID/us-west-2
+cdk bootstrap aws://$ACCOUNT_ID/us-east-1
 ```
 
 1. **Create cdk.json:**
@@ -241,7 +241,7 @@ aws sts get-caller-identity
 ```bash
 aws ses verify-domain-identity \
   --domain jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 1. **Enable DKIM:**
@@ -249,7 +249,7 @@ aws ses verify-domain-identity \
 ```bash
 aws ses verify-domain-dkim \
   --domain jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 This will return 3 DKIM tokens to add as CNAME records.
@@ -260,12 +260,12 @@ This will return 3 DKIM tokens to add as CNAME records.
 # Get verification token
 aws ses get-identity-verification-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 
 # Get DKIM tokens
 aws ses get-identity-dkim-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 1. **Add DNS Records to Route 53:**
@@ -291,7 +291,7 @@ aws route53 change-resource-record-sets \
 # Check status (repeat until verified)
 aws ses get-identity-verification-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 1. **Verify Recipient Email (Sandbox Mode):**
@@ -299,7 +299,7 @@ aws ses get-identity-verification-attributes \
 ```bash
 aws ses verify-email-identity \
   --email-address jamesmoon2@gmail.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 Check inbox for verification email and click the link.
@@ -311,7 +311,7 @@ aws ses send-email \
   --from reflections@jamescmooney.com \
   --destination "ToAddresses=jamesmoon2@gmail.com" \
   --message "Subject={Data='Test Email'},Body={Text={Data='This is a test from SES'}}" \
-  --region us-west-2
+  --region us-east-1
 ```
 
 **Success Criteria:**
@@ -347,7 +347,7 @@ StoicStack(
     app, 
     "DailyStoicStack",
     env=cdk.Environment(
-        region="us-west-2"
+        region="us-east-1"
     ),
     description="Daily Stoic reflection email service"
 )
@@ -659,7 +659,7 @@ aws s3 ls s3://$BUCKET_NAME/
 aws lambda invoke \
   --function-name DailyStoicSender \
   --payload '{}' \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json
 
 cat response.json
@@ -668,7 +668,7 @@ cat response.json
 **Check CloudWatch Logs:**
 
 ```bash
-aws logs tail /aws/lambda/DailyStoicSender --follow --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 ```
 
 **Verify:**
@@ -717,10 +717,10 @@ Review changes and confirm deployment.
 
 ```bash
 # Check Lambda function
-aws lambda get-function --function-name DailyStoicSender --region us-west-2
+aws lambda get-function --function-name DailyStoicSender --region us-east-1
 
 # Check EventBridge rule
-aws events describe-rule --name DailyTrigger --region us-west-2
+aws events describe-rule --name DailyTrigger --region us-east-1
 
 # Check S3 bucket
 aws s3 ls
@@ -744,7 +744,7 @@ aws lambda invoke \
   --log-type Tail \
   --query 'LogResult' \
   --output text \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json | base64 -d
 
 echo "\n--- Response ---"
@@ -787,7 +787,7 @@ Should show one entry with today’s date.
 **Verify EventBridge Rule:**
 
 ```bash
-aws events describe-rule --name DailyTrigger --region us-west-2
+aws events describe-rule --name DailyTrigger --region us-east-1
 ```
 
 Confirm:

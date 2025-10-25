@@ -71,7 +71,7 @@ aws configure
 When prompted, enter:
 - **AWS Access Key ID**: Your access key
 - **AWS Secret Access Key**: Your secret key
-- **Default region name**: `us-west-2`
+- **Default region name**: `us-east-1`
 - **Default output format**: `json`
 
 ### Verify AWS Connection
@@ -118,12 +118,12 @@ Edit `cdk.json` and replace the placeholder API key:
 # Verify your domain
 aws ses verify-domain-identity \
   --domain jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 
 # Enable DKIM signing
 aws ses verify-domain-dkim \
   --domain jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 The second command will return 3 DKIM tokens.
@@ -134,12 +134,12 @@ The second command will return 3 DKIM tokens.
 # Get domain verification token
 aws ses get-identity-verification-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 
 # Get DKIM tokens
 aws ses get-identity-dkim-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 ### 4.3 Add DNS Records to Route 53
@@ -179,7 +179,7 @@ DNS propagation can take 5-10 minutes. Check status:
 # Check verification status (repeat until "Success")
 aws ses get-identity-verification-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 ### 4.5 Verify Initial Recipient Email (Sandbox Mode)
@@ -189,7 +189,7 @@ While in SES sandbox mode, you must verify recipient email addresses:
 ```bash
 aws ses verify-email-identity \
   --email-address jamesmoon2@gmail.com \
-  --region us-west-2
+  --region us-east-1
 ```
 
 Check your email inbox and click the verification link.
@@ -201,7 +201,7 @@ aws ses send-email \
   --from reflections@jamescmooney.com \
   --destination "ToAddresses=jamesmoon2@gmail.com" \
   --message "Subject={Data='SES Test'},Body={Text={Data='Test email from SES'}}" \
-  --region us-west-2
+  --region us-east-1
 ```
 
 If successful, you should receive the test email within 1-2 minutes.
@@ -213,7 +213,7 @@ If successful, you should receive the test email within 1-2 minutes.
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # Bootstrap CDK in your account/region
-cdk bootstrap aws://$ACCOUNT_ID/us-west-2
+cdk bootstrap aws://$ACCOUNT_ID/us-east-1
 ```
 
 This creates necessary S3 buckets and IAM roles for CDK deployments.
@@ -256,12 +256,12 @@ The deployment will:
 # Check Lambda function
 aws lambda get-function \
   --function-name DailyStoicSender \
-  --region us-west-2
+  --region us-east-1
 
 # Check EventBridge rule
 aws events describe-rule \
   --name DailyStoicTrigger \
-  --region us-west-2
+  --region us-east-1
 
 # Check S3 bucket (use the bucket name from CDK output)
 aws s3 ls | grep daily-stoic
@@ -302,7 +302,7 @@ aws s3 ls s3://$BUCKET_NAME/
 # Invoke the Lambda function manually
 aws lambda invoke \
   --function-name DailyStoicSender \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json
 
 # Check the response
@@ -313,7 +313,7 @@ cat response.json
 
 ```bash
 # View Lambda logs
-aws logs tail /aws/lambda/DailyStoicSender --follow --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 ```
 
 ### Verify Email Delivery
@@ -339,7 +339,7 @@ aws s3 cp s3://$BUCKET_NAME/quote_history.json -
 ```bash
 aws events describe-rule \
   --name DailyStoicTrigger \
-  --region us-west-2
+  --region us-east-1
 ```
 
 Verify:
@@ -377,24 +377,24 @@ While in sandbox mode, you can only send to verified email addresses. To send to
 
 1. **Check CloudWatch Logs**:
    ```bash
-   aws logs tail /aws/lambda/DailyStoicSender --region us-west-2
+   aws logs tail /aws/lambda/DailyStoicSender --region us-east-1
    ```
 
 2. **Verify SES Domain Status**:
    ```bash
    aws ses get-identity-verification-attributes \
      --identities jamescmooney.com \
-     --region us-west-2
+     --region us-east-1
    ```
 
 3. **Check SES Sending Statistics**:
    ```bash
-   aws ses get-send-statistics --region us-west-2
+   aws ses get-send-statistics --region us-east-1
    ```
 
 4. **Verify Recipient Email** (if in sandbox):
    ```bash
-   aws ses list-identities --region us-west-2
+   aws ses list-identities --region us-east-1
    ```
 
 ### Lambda Execution Errors
@@ -403,7 +403,7 @@ While in sandbox mode, you can only send to verified email addresses. To send to
    ```bash
    aws lambda get-function-configuration \
      --function-name DailyStoicSender \
-     --region us-west-2
+     --region us-east-1
    ```
 
 2. **Verify IAM permissions**:

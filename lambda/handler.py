@@ -51,7 +51,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         bucket_name = os.environ.get('BUCKET_NAME')
         sender_email = os.environ.get('SENDER_EMAIL')
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
-        aws_region = os.environ.get('AWS_REGION', 'us-west-2')
+        aws_region = os.environ.get('AWS_REGION', 'us-east-1')
 
         # Validate environment variables
         if not all([bucket_name, sender_email, anthropic_api_key]):
@@ -215,7 +215,7 @@ def send_email_via_ses(
     subject: str,
     html_body: str,
     text_body: str,
-    region: str = 'us-west-2'
+    region: str = 'us-east-1'
 ) -> None:
     """
     Send an email via Amazon SES.
@@ -226,7 +226,7 @@ def send_email_via_ses(
         subject: Email subject line
         html_body: HTML email body
         text_body: Plain text email body (fallback)
-        region: AWS region (default: us-west-2)
+        region: AWS region (default: us-east-1)
 
     Raises:
         Exception: If email send fails

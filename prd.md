@@ -852,8 +852,8 @@ Option A: Using AWS Console
 Option B: Using AWS CLI
 
 ```bash
-aws ses verify-domain-identity --domain jamescmooney.com --region us-west-2
-aws ses verify-domain-dkim --domain jamescmooney.com --region us-west-2
+aws ses verify-domain-identity --domain jamescmooney.com --region us-east-1
+aws ses verify-domain-dkim --domain jamescmooney.com --region us-east-1
 ```
 
 **Step 5: Add DNS Records to Route 53**
@@ -866,7 +866,7 @@ aws ses verify-domain-dkim --domain jamescmooney.com --region us-west-2
 **Step 6: Verify Email Address (Sandbox Mode)**
 
 ```bash
-aws ses verify-email-identity --email-address jamesmoon2@gmail.com --region us-west-2
+aws ses verify-email-identity --email-address jamesmoon2@gmail.com --region us-east-1
 ```
 
 Check email inbox for verification link and click it.
@@ -892,7 +892,7 @@ Create files according to project structure (Section 5.1)
 **Step 9: Bootstrap CDK (First-time only)**
 
 ```bash
-cdk bootstrap aws://ACCOUNT-ID/us-west-2
+cdk bootstrap aws://ACCOUNT-ID/us-east-1
 ```
 
 **Step 10: Deploy Stack**
@@ -941,7 +941,7 @@ aws s3 cp recipients.json s3://daily-stoic-reflection-ACCOUNT-ID/recipients.json
 aws lambda invoke \
   --function-name DailyStoicSender \
   --payload '{}' \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json
 
 cat response.json
@@ -966,7 +966,7 @@ aws s3 cp s3://daily-stoic-reflection-ACCOUNT-ID/quote_history.json -
 **Step 15: Verify EventBridge Schedule**
 
 ```bash
-aws events describe-rule --name DailyTrigger --region us-west-2
+aws events describe-rule --name DailyTrigger --region us-east-1
 
 # Verify: ScheduleExpression shows cron(0 14 * * ? *)
 ```
@@ -979,7 +979,7 @@ Logs are automatically created, but you can set retention:
 aws logs put-retention-policy \
   --log-group-name /aws/lambda/DailyStoicSender \
   --retention-in-days 7 \
-  --region us-west-2
+  --region us-east-1
 ```
 
 ### 8.3 Configuration Updates
@@ -999,7 +999,7 @@ aws logs put-retention-policy \
 aws s3 cp recipients.json s3://daily-stoic-reflection-ACCOUNT-ID/recipients.json
 
 # If in sandbox mode, verify new email first:
-aws ses verify-email-identity --email-address newfriend@example.com --region us-west-2
+aws ses verify-email-identity --email-address newfriend@example.com --region us-east-1
 ```
 
 **Changing Schedule:**
@@ -1082,7 +1082,7 @@ aws lambda invoke \
   --log-type Tail \
   --query 'LogResult' \
   --output text \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json | base64 -d
 
 # Check response
@@ -1320,10 +1320,10 @@ fi
 
 ```bash
 # View Lambda logs
-aws logs tail /aws/lambda/DailyStoicSender --follow --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 
 # Manually trigger Lambda
-aws lambda invoke --function-name DailyStoicSender response.json --region us-west-2
+aws lambda invoke --function-name DailyStoicSender response.json --region us-east-1
 
 # Download quote history
 aws s3 cp s3://daily-stoic-reflection-ACCOUNT-ID/quote_history.json ./
@@ -1332,11 +1332,11 @@ aws s3 cp s3://daily-stoic-reflection-ACCOUNT-ID/quote_history.json ./
 aws s3 cp recipients.json s3://daily-stoic-reflection-ACCOUNT-ID/recipients.json
 
 # Check SES sending statistics
-aws ses get-send-statistics --region us-west-2
+aws ses get-send-statistics --region us-east-1
 
 # View EventBridge rule
-aws events list-rules --region us-west-2
-aws events describe-rule --name DailyTrigger --region us-west-2
+aws events list-rules --region us-east-1
+aws events describe-rule --name DailyTrigger --region us-east-1
 ```
 
 ### 12.4 Reference Links

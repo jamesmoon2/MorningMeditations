@@ -21,7 +21,7 @@ StoicStack(
         # Or specify explicitly:
         # account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
         # region=os.environ.get("CDK_DEFAULT_REGION")
-        region="us-west-2"  # Explicitly set region
+        region="us-east-1"  # Explicitly set region
     ),
     description="Daily Stoic reflection email service - generates and sends philosophical reflections",
     tags={

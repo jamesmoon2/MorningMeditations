@@ -36,7 +36,7 @@ To add new email recipients:
    ```bash
    aws ses verify-email-identity \
      --email-address newfriend@example.com \
-     --region us-west-2
+     --region us-east-1
    ```
 
    The recipient will receive a verification email. They must click the link.
@@ -55,7 +55,7 @@ To add new email recipients:
    ```bash
    aws lambda invoke \
      --function-name DailyStoicSender \
-     --region us-west-2 \
+     --region us-east-1 \
      response.json
 
    cat response.json
@@ -115,11 +115,11 @@ CDK automatically packages the `lambda/` directory and deploys it.
 # Manually invoke to test
 aws lambda invoke \
   --function-name DailyStoicSender \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json
 
 # Check logs
-aws logs tail /aws/lambda/DailyStoicSender --follow --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 ```
 
 ---
@@ -159,7 +159,7 @@ The default schedule is **6:00 AM PST** (14:00 UTC), which is **7:00 AM PDT**.
 
 4. **Verify**:
    ```bash
-   aws events describe-rule --name DailyStoicTrigger --region us-west-2
+   aws events describe-rule --name DailyStoicTrigger --region us-east-1
    ```
 
 ### Change to Weekdays Only
@@ -187,10 +187,10 @@ Then redeploy with `cdk deploy`.
 
 ```bash
 # Tail logs in real-time
-aws logs tail /aws/lambda/DailyStoicSender --follow --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 
 # View logs from last 24 hours
-aws logs tail /aws/lambda/DailyStoicSender --since 24h --region us-west-2
+aws logs tail /aws/lambda/DailyStoicSender --since 24h --region us-east-1
 
 # Filter for errors only
 aws logs tail /aws/lambda/DailyStoicSender --filter-pattern "ERROR" --since 7d
@@ -208,7 +208,7 @@ aws logs tail /aws/lambda/DailyStoicSender --filter-pattern "ERROR" --since 7d
 
 ```bash
 # Get sending statistics
-aws ses get-send-statistics --region us-west-2
+aws ses get-send-statistics --region us-east-1
 
 # Check bounce/complaint rate (should be near 0)
 ```
@@ -291,7 +291,7 @@ aws sns subscribe \
 aws logs filter-log-events \
   --log-group-name /aws/lambda/DailyStoicSender \
   --start-time $(date -u -d '1 hour ago' +%s000) \
-  --region us-west-2
+  --region us-east-1
 ```
 
 **Step 2: Check for Errors**
@@ -299,7 +299,7 @@ aws logs filter-log-events \
 aws logs tail /aws/lambda/DailyStoicSender \
   --filter-pattern "ERROR" \
   --since 24h \
-  --region us-west-2
+  --region us-east-1
 ```
 
 **Step 3: Verify SES Status**
@@ -307,10 +307,10 @@ aws logs tail /aws/lambda/DailyStoicSender \
 # Check domain verification
 aws ses get-identity-verification-attributes \
   --identities jamescmooney.com \
-  --region us-west-2
+  --region us-east-1
 
 # Check if email was sent
-aws ses get-send-statistics --region us-west-2
+aws ses get-send-statistics --region us-east-1
 ```
 
 **Step 4: Check Spam Folder**
@@ -321,7 +321,7 @@ Emails might be filtered. Add `reflections@jamescmooney.com` to contacts.
 ```bash
 aws lambda invoke \
   --function-name DailyStoicSender \
-  --region us-west-2 \
+  --region us-east-1 \
   response.json
 
 cat response.json
@@ -339,7 +339,7 @@ aws s3 cp s3://$BUCKET_NAME/quote_history.json -
 # Verify Lambda has S3 write permissions
 aws lambda get-function-configuration \
   --function-name DailyStoicSender \
-  --region us-west-2
+  --region us-east-1
 ```
 
 **Solution**: Ensure Lambda role has `s3:PutObject` permission.
@@ -378,7 +378,7 @@ aws logs tail /aws/lambda/DailyStoicSender \
 
 **Verify Schedule**:
 ```bash
-aws events describe-rule --name DailyStoicTrigger --region us-west-2
+aws events describe-rule --name DailyStoicTrigger --region us-east-1
 ```
 
 **Remember**:
