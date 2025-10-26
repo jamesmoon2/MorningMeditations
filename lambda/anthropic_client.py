@@ -14,51 +14,37 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def build_prompt(theme: str, used_quotes: List[str]) -> str:
+def build_reflection_prompt(quote: str, attribution: str, theme: str) -> str:
     """
-    Build the prompt for Claude to generate a stoic reflection.
+    Build the prompt for Claude to generate a reflection based on a provided quote.
 
     Args:
+        quote: The stoic quote to reflect upon
+        attribution: The quote's attribution (e.g., "Marcus Aurelius - Meditations 5.1")
         theme: Monthly theme (e.g., "Discipline and Self-Improvement")
-        used_quotes: List of recently used quote attributions to avoid
 
     Returns:
         Formatted prompt string
     """
-    # Format exclusion list
-    if used_quotes:
-        exclusion_list = "\n".join([f"- {quote}" for quote in used_quotes])
-    else:
-        exclusion_list = "(No quotes to exclude - this is the first reflection)"
+    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life.
 
-    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to create a daily reflection for someone interested in applying stoic wisdom to modern life.
+You have been given this stoic quote to reflect upon:
+
+"{quote}"
+— {attribution}
 
 Current Month's Theme: {theme}
 
-Requirements:
-1. Select ONE quote from classical stoic texts:
-   - Marcus Aurelius (Meditations)
-   - Epictetus (Discourses or Enchiridion)
-   - Seneca (Letters or Essays)
-   - Musonius Rufus (Lectures)
+Write a reflection (250-450 words) that:
+- Explains the quote's meaning in accessible language
+- Connects it to modern life with a concrete, relatable example
+- Offers practical, actionable guidance the reader can apply today
+- Uses a warm, conversational tone (imagine speaking to a thoughtful friend)
+- Avoids academic jargon or overly formal language
+- Feels personal and encouraging, not preachy or didactic
 
-2. The quote should relate to this month's theme: {theme}
-
-3. Do NOT use any of these recently used quotes:
-{exclusion_list}
-
-4. Write a reflection (250-450 words) that:
-   - Explains the quote's meaning in accessible language
-   - Connects it to modern life with a concrete, relatable example
-   - Offers practical, actionable guidance the reader can apply today
-   - Uses a warm, conversational tone (imagine speaking to a thoughtful friend)
-   - Avoids academic jargon or overly formal language
-   - Feels personal and encouraging, not preachy or didactic
-
-5. Format your response as JSON:
+Format your response as JSON:
 {{
-  "quote": "The exact quote text",
-  "attribution": "Author - Work Section (e.g., 'Marcus Aurelius - Meditations 4.3')",
   "reflection": "Your full reflection text here"
 }}
 
@@ -67,7 +53,7 @@ Write the reflection now."""
     return prompt
 
 
-def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> Dict[str, str]:
+def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> str:
     """
     Call the Anthropic API to generate a stoic reflection.
 
@@ -77,7 +63,7 @@ def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> Dict[str
         timeout: API call timeout in seconds (default: 25)
 
     Returns:
-        Dictionary with 'quote', 'attribution', and 'reflection' keys
+        The reflection text
 
     Raises:
         Exception: If API call fails or response is invalid
@@ -106,18 +92,18 @@ def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> Dict[str
         logger.info(f"Received response from Anthropic API ({len(response_text)} chars)")
 
         # Parse the response
-        result = parse_anthropic_response(response_text)
+        reflection = parse_reflection_response(response_text)
 
-        return result
+        return reflection
 
     except Exception as e:
         logger.error(f"Error calling Anthropic API: {e}")
         raise
 
 
-def parse_anthropic_response(response_text: str) -> Dict[str, str]:
+def parse_reflection_response(response_text: str) -> str:
     """
-    Parse Claude's response and extract structured data.
+    Parse Claude's response and extract the reflection text.
 
     Handles both raw JSON and JSON wrapped in markdown code blocks.
 
@@ -125,10 +111,10 @@ def parse_anthropic_response(response_text: str) -> Dict[str, str]:
         response_text: Raw response text from Claude
 
     Returns:
-        Dictionary with 'quote', 'attribution', and 'reflection' keys
+        The reflection text string
 
     Raises:
-        ValueError: If response is invalid or missing required fields
+        ValueError: If response is invalid or missing reflection field
     """
     try:
         # Try to extract JSON from markdown code blocks first
@@ -149,22 +135,17 @@ def parse_anthropic_response(response_text: str) -> Dict[str, str]:
         # Parse JSON
         data = json.loads(json_str)
 
-        # Validate required fields
-        required_fields = ['quote', 'attribution', 'reflection']
-        for field in required_fields:
-            if field not in data:
-                raise ValueError(f"Missing required field: {field}")
-            if not data[field] or not isinstance(data[field], str):
-                raise ValueError(f"Invalid value for field: {field}")
+        # Validate reflection field
+        if 'reflection' not in data:
+            raise ValueError("Missing required field: reflection")
+        if not data['reflection'] or not isinstance(data['reflection'], str):
+            raise ValueError("Invalid value for field: reflection")
 
         logger.info("Successfully parsed Anthropic response")
-        logger.info(f"Quote attribution: {data['attribution']}")
+        reflection_length = len(data['reflection'])
+        logger.info(f"Reflection length: {reflection_length} characters")
 
-        return {
-            'quote': data['quote'].strip(),
-            'attribution': data['attribution'].strip(),
-            'reflection': data['reflection'].strip()
-        }
+        return data['reflection'].strip()
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON from response: {e}")
@@ -208,34 +189,36 @@ def validate_attribution_format(attribution: str) -> bool:
     return any(known in author for known in known_authors)
 
 
-def generate_reflection(
+def generate_reflection_only(
+    quote: str,
+    attribution: str,
     theme: str,
-    used_quotes: List[str],
     api_key: str
-) -> Optional[Dict[str, str]]:
+) -> Optional[str]:
     """
-    High-level function to generate a complete reflection.
+    Generate a reflection based on a provided quote.
 
     Args:
+        quote: The stoic quote to reflect upon
+        attribution: The quote's attribution (e.g., "Marcus Aurelius - Meditations 5.1")
         theme: Monthly theme name
-        used_quotes: List of recently used quote attributions
         api_key: Anthropic API key
 
     Returns:
-        Dictionary with quote, attribution, and reflection, or None if generation fails
+        The reflection text, or None if generation fails
     """
     try:
-        prompt = build_prompt(theme, used_quotes)
-        result = call_anthropic_api(prompt, api_key)
-
         # Validate attribution format
-        if not validate_attribution_format(result['attribution']):
+        if not validate_attribution_format(attribution):
             logger.warning(
-                f"Attribution format may be unusual: {result['attribution']}"
+                f"Attribution format may be unusual: {attribution}"
             )
             # Don't fail, just log warning
 
-        return result
+        prompt = build_reflection_prompt(quote, attribution, theme)
+        reflection = call_anthropic_api(prompt, api_key)
+
+        return reflection
 
     except Exception as e:
         logger.error(f"Failed to generate reflection: {e}")
