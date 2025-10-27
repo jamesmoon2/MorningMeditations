@@ -284,14 +284,17 @@ echo "Bucket name: $BUCKET_NAME"
 ### Upload Config Files
 
 ```bash
-# Upload quote history (empty initially)
+# Upload 365-day quotes database
+aws s3 cp config/stoic_quotes_365_days.json s3://$BUCKET_NAME/config/stoic_quotes_365_days.json
+
+# Upload quote history (empty initially or from backup)
 aws s3 cp config/quote_history.json s3://$BUCKET_NAME/quote_history.json
 
 # Upload recipients list
 aws s3 cp config/recipients.json s3://$BUCKET_NAME/recipients.json
 
 # Verify upload
-aws s3 ls s3://$BUCKET_NAME/
+aws s3 ls s3://$BUCKET_NAME/ --recursive
 ```
 
 ## Step 8: Test the Lambda Function (10 minutes)
