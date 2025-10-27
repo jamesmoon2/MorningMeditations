@@ -4,15 +4,16 @@ Daily Stoic Reflection Email Service - Automated philosophical wisdom delivered 
 
 ## Overview
 
-An automated service that delivers daily stoic philosophical reflections via email. Each morning at 6:00 AM Pacific Time, the system uses Claude (Anthropic's AI) to select a classical stoic quote and write an original reflection, themed by month, ensuring no repeats within a year.
+An automated service that delivers daily stoic philosophical reflections via email. Each morning at 6:00 AM Pacific Time, the system loads a curated quote from a 365-day database and uses Claude (Anthropic's AI) to write an original reflection, themed by month.
 
 ## Features
 
 - **Daily Delivery**: Automated emails at 6:00 AM PT
-- **AI-Generated Content**: Fresh, unique reflections using Claude Sonnet 4.5
+- **Curated Quotes**: 365 pre-selected classical stoic quotes (one for each day)
+- **AI-Generated Reflections**: Fresh, unique reflections using Claude Sonnet 4.5
 - **Monthly Themes**: 12 distinct themes throughout the year
 - **Classical Sources**: Quotes from Marcus Aurelius, Epictetus, Seneca, and Musonius Rufus
-- **No Repeats**: Intelligent tracking prevents quote repetition within 365 days
+- **Predictable Rotation**: 365-day quote cycle ensures variety and consistency
 - **Beautiful HTML**: Responsive email formatting optimized for all devices
 - **Cost-Effective**: Runs for ~$0.18/month
 
@@ -22,11 +23,13 @@ An automated service that delivers daily stoic philosophical reflections via ema
 AWS Cloud
 ├── EventBridge (Daily 6 AM PT trigger)
 ├── Lambda (Python 3.12)
+│   ├── Load daily quote from 365-day database
 │   ├── Generate reflection via Anthropic API
-│   ├── Track quote history in S3
+│   ├── Archive to quote history in S3
 │   └── Send formatted emails via SES
 ├── S3 (State management)
-│   ├── quote_history.json
+│   ├── stoic_quotes_365_days.json (365 curated quotes)
+│   ├── quote_history.json (archival record)
 │   └── recipients.json
 └── SES (Email delivery from jamescmooney.com)
 ```
@@ -45,16 +48,20 @@ AWS Cloud
 daily-stoic-reflection/
 ├── lambda/              # Lambda function code
 │   ├── handler.py       # Main entry point
-│   ├── anthropic_client.py
+│   ├── quote_loader.py  # Loads daily quotes from 365-day database
+│   ├── anthropic_client.py  # Generates reflections via API
 │   ├── email_formatter.py
-│   ├── quote_tracker.py
+│   ├── quote_tracker.py  # Archives history
 │   └── themes.py
 ├── infra/              # AWS CDK infrastructure
 │   └── stoic_stack.py
 ├── config/             # Configuration files
+│   ├── stoic_quotes_365_days.json  # 365 curated quotes
 │   ├── recipients.json
-│   └── quote_history.json
+│   └── quote_history.json  # Historical archive
 ├── tests/              # Unit tests
+├── validate_quotes.py  # Validates 365-day database
+├── test_quote_loader.py  # Tests quote loading
 └── app.py              # CDK app entry point
 ```
 

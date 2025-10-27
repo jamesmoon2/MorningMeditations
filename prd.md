@@ -1,9 +1,11 @@
 # Product Requirements Document: Daily Stoic Reflection Service
 
-**Version:** 1.0  
-**Date:** October 21, 2025  
-**Author:** James Mooney  
-**Status:** Ready for Implementation
+> **⚠️ DEPRECATION NOTICE**: This document describes the original design where Claude AI generated both quotes and reflections. The system was simplified on October 27, 2025 to use a pre-drafted 365-day quote database. This document is kept for historical reference. See [ARCHITECTURE.md](ARCHITECTURE.md) for current system design.
+
+**Version:** 1.0 (DEPRECATED)
+**Date:** October 21, 2025
+**Author:** James Mooney
+**Status:** Superseded by simplified implementation
 
 -----
 
