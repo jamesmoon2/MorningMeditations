@@ -71,6 +71,45 @@ Simply edit `config/recipients.json`, remove the email address, and upload:
 aws s3 cp config/recipients.json s3://$BUCKET_NAME/recipients.json
 ```
 
+### Managing the Quotes Database
+
+The system uses a pre-drafted 365-day quote database located in `config/stoic_quotes_365_days.json`.
+
+**To update or modify quotes**:
+
+1. **Validate the database**:
+   ```bash
+   python3 validate_quotes.py
+   ```
+
+   This checks that all 365 days are present and properly formatted.
+
+2. **Test quote loading**:
+   ```bash
+   python3 test_quote_loader.py
+   ```
+
+   This tests loading quotes for various dates including leap years.
+
+3. **Upload to S3**:
+   ```bash
+   aws s3 cp config/stoic_quotes_365_days.json \
+     s3://$BUCKET_NAME/config/stoic_quotes_365_days.json
+   ```
+
+4. **Test with Lambda**:
+   ```bash
+   aws lambda invoke \
+     --function-name DailyStoicSender \
+     --region us-west-2 \
+     response.json
+   ```
+
+**Database structure**:
+- Organized by month (january, february, etc.)
+- Each month contains daily entries with: day, theme, quote, attribution
+- Must contain exactly 365 days (no Feb 29 - leap years use Feb 28)
+
 ---
 
 ## Updating Lambda Code
@@ -80,10 +119,11 @@ When you make changes to the Lambda function code:
 ### 1. Make Code Changes
 
 Edit files in the `lambda/` directory:
-- `handler.py` - Main logic
-- `anthropic_client.py` - API interactions
+- `handler.py` - Main logic and orchestration
+- `quote_loader.py` - Loads daily quotes from 365-day database
+- `anthropic_client.py` - API interactions for reflection generation
 - `email_formatter.py` - Email templates
-- `quote_tracker.py` - History management
+- `quote_tracker.py` - History archival
 - `themes.py` - Monthly themes
 
 ### 2. Test Locally (Optional)
@@ -327,22 +367,25 @@ aws lambda invoke \
 cat response.json
 ```
 
-### Repeated Quotes
+### Wrong Quote for Date
 
-**Cause**: Quote history not updating properly.
+**Cause**: Quotes database not loaded properly or corrupted.
 
 **Fix**:
 ```bash
-# Check history file
-aws s3 cp s3://$BUCKET_NAME/quote_history.json -
+# Verify quotes database exists in S3
+aws s3 ls s3://$BUCKET_NAME/config/
 
-# Verify Lambda has S3 write permissions
-aws lambda get-function-configuration \
-  --function-name DailyStoicSender \
-  --region us-west-2
+# Download and validate locally
+aws s3 cp s3://$BUCKET_NAME/config/stoic_quotes_365_days.json ./
+python3 validate_quotes.py
+
+# Re-upload if needed
+aws s3 cp config/stoic_quotes_365_days.json \
+  s3://$BUCKET_NAME/config/stoic_quotes_365_days.json
 ```
 
-**Solution**: Ensure Lambda role has `s3:PutObject` permission.
+**Note**: The system loads quotes by date (month + day), so each day gets a specific quote from the 365-day database. History tracking is now for archival purposes only.
 
 ### Lambda Timeout
 
@@ -562,4 +605,5 @@ aws ce get-cost-and-usage --time-period Start=2025-10-01,End=2025-10-31 \
 
 ---
 
-**Last Updated**: October 22, 2025
+**Last Updated**: October 27, 2025
+**Changes**: Updated for simplified quote system using pre-drafted 365-day database
