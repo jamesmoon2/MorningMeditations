@@ -11,6 +11,7 @@ __pycache__/
 # CDK
 cdk.out/
 cdk.context.json
+cdk.json
 
 # IDE
 .vscode/
@@ -27,6 +28,46 @@ htmlcov/
 
 # AWS
 response.json
+deploymentoutput.md
+
+# Build artifacts
+lambda_linux/
+lambda_package.zip
+*.zip
+
+# Lambda dependencies (should be built, not committed)
+lambda/anthropic/
+lambda/anthropic-*/
+lambda/anyio/
+lambda/anyio-*/
+lambda/annotated_types/
+lambda/annotated_types-*/
+lambda/bin/
+lambda/certifi/
+lambda/certifi-*/
+lambda/distro/
+lambda/distro-*/
+lambda/docstring_parser/
+lambda/docstring_parser-*/
+lambda/h11/
+lambda/h11-*/
+lambda/httpcore/
+lambda/httpcore-*/
+lambda/httpx/
+lambda/httpx-*/
+lambda/idna/
+lambda/idna-*/
+lambda/jiter/
+lambda/jiter-*/
+lambda/pydantic/
+lambda/pydantic-*/
+lambda/pydantic_core/
+lambda/pydantic_core-*/
+lambda/sniffio/
+lambda/sniffio-*/
+lambda/typing_extensions-*/
+lambda/typing_inspection/
+lambda/typing_inspection-*/
 
 # Environment
 .env

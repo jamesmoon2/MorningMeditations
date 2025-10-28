@@ -49,7 +49,7 @@ class StoicStack(Stack):
             function_name="DailyStoicSender",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="handler.lambda_handler",
-            code=lambda_.Code.from_asset("lambda"),
+            code=lambda_.Code.from_asset("lambda_linux"),
             timeout=Duration.seconds(60),
             memory_size=256,
             environment={
