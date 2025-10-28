@@ -1,6 +1,10 @@
 # PowerShell script to build Lambda package with Linux dependencies
 Write-Host "Building Lambda package with Linux dependencies..." -ForegroundColor Green
 
+# Get the script's directory and change to it
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $scriptDir
+
 # Clean up old build
 if (Test-Path "lambda_linux") {
     Remove-Item -Recurse -Force lambda_linux
