@@ -1,7 +1,7 @@
 """
-Quote tracking functionality to prevent repetition within 365 days.
+Quote history archival functionality.
 
-Manages quote history in S3, tracking which quotes have been used and when.
+Manages quote history in S3 for posterity, tracking daily quotes and reflections.
 """
 
 import json
@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 
 class QuoteTracker:
-    """Manages quote history in S3 to prevent repetition."""
+    """Manages quote history in S3 for archival purposes."""
 
     def __init__(self, bucket_name: str, history_key: str = "quote_history.json"):
         """
@@ -84,46 +84,24 @@ class QuoteTracker:
             logger.error(f"Error saving history to S3: {e}")
             raise
 
-    def get_used_quotes(self, history: Dict[str, Any], days: int = 365) -> List[str]:
-        """
-        Get list of quote attributions used within the last N days.
-
-        Args:
-            history: Quote history dictionary
-            days: Number of days to look back (default: 365)
-
-        Returns:
-            List of attribution strings (e.g., "Marcus Aurelius - Meditations 4.3")
-        """
-        cutoff_date = datetime.now() - timedelta(days=days)
-        used_quotes = []
-
-        for quote_entry in history.get('quotes', []):
-            try:
-                quote_date = datetime.fromisoformat(quote_entry['date'])
-                if quote_date >= cutoff_date:
-                    used_quotes.append(quote_entry['attribution'])
-            except (KeyError, ValueError) as e:
-                logger.warning(f"Skipping invalid quote entry: {e}")
-                continue
-
-        logger.info(f"Found {len(used_quotes)} quotes used in last {days} days")
-        return used_quotes
-
     def add_quote(
         self,
         history: Dict[str, Any],
         date: str,
+        quote: str,
         attribution: str,
+        reflection: str,
         theme: str
     ) -> Dict[str, Any]:
         """
-        Add a new quote to the history.
+        Add a new quote and reflection to the history for archival purposes.
 
         Args:
             history: Existing quote history dictionary
             date: ISO format date string (YYYY-MM-DD)
+            quote: The stoic quote text
             attribution: Quote attribution (e.g., "Marcus Aurelius - Meditations 4.3")
+            reflection: The reflection text
             theme: Monthly theme name
 
         Returns:
@@ -132,14 +110,19 @@ class QuoteTracker:
         if 'quotes' not in history:
             history['quotes'] = []
 
+        # Create a preview of the reflection (first 100 chars)
+        reflection_preview = reflection[:100] + "..." if len(reflection) > 100 else reflection
+
         new_entry = {
             "date": date,
+            "quote": quote,
             "attribution": attribution,
-            "theme": theme
+            "theme": theme,
+            "reflection_preview": reflection_preview
         }
 
         history['quotes'].append(new_entry)
-        logger.info(f"Added quote to history: {attribution} on {date}")
+        logger.info(f"Added entry to history: {attribution} on {date}")
 
         return history
 

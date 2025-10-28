@@ -1,9 +1,12 @@
 # Daily Stoic Reflection Service - Implementation Project Plan
 
-**Project:** Daily Stoic Reflection Email Service  
-**Timeline:** 6-8 hours total implementation time  
-**Developer:** Pair programming with Claude Code  
+> **⚠️ DEPRECATION NOTICE**: This project plan describes the original implementation with AI-generated quotes. The system was simplified on October 27, 2025 to use pre-drafted quotes. This document is kept for historical reference. See [ARCHITECTURE.md](ARCHITECTURE.md) and [DEPLOYMENT.md](DEPLOYMENT.md) for current system documentation.
+
+**Project:** Daily Stoic Reflection Email Service
+**Timeline:** 6-8 hours total implementation time
+**Developer:** Pair programming with Claude Code
 **Date:** October 21, 2025
+**Status:** DEPRECATED - Original implementation plan
 
 -----
 
