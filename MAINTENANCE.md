@@ -17,7 +17,8 @@ Guide for ongoing maintenance, updates, and troubleshooting of the Daily Stoic R
 
 ## Common Maintenance Tasks
 
-### Adding Recipients
+### Adding Recipients 
+(" aws s3 cp MorningMeditations/config/recipients.json s3://dailystoicstack-stoicbucket1735cb3e-6gpkqrlkarzw/recipients.json ")
 
 To add new email recipients:
 
