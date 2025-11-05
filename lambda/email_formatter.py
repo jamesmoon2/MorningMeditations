@@ -1,7 +1,7 @@
 """
 Email formatting utilities for creating beautiful HTML and plain text emails.
 
-Provides templates and formatting functions for daily stoic reflection emails.
+Provides templates and formatting functions for morning stoic reflection emails.
 """
 
 import html
@@ -34,7 +34,7 @@ def format_html_email(quote: str, attribution: str, reflection: str, theme: str)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Stoic Reflection</title>
+    <title>Morning Stoic Reflection</title>
     <style>
         body {{
             font-family: Georgia, 'Times New Roman', serif;
@@ -104,7 +104,7 @@ def format_html_email(quote: str, attribution: str, reflection: str, theme: str)
 <body>
     <div class="container">
         <div class="header">
-            <h1>Daily Stoic Reflection</h1>
+            <h1>Morning Stoic Reflection</h1>
             <div class="theme">{theme_safe}</div>
         </div>
 
@@ -118,7 +118,7 @@ def format_html_email(quote: str, attribution: str, reflection: str, theme: str)
         </div>
 
         <div class="footer">
-            Daily Stoic Reflection • Powered by Claude
+            Morning Stoic Reflection • Powered by Claude
         </div>
     </div>
 </body>
@@ -143,7 +143,7 @@ def format_plain_text_email(quote: str, attribution: str, reflection: str) -> st
 
     plain_text = f"""
 {divider}
-DAILY STOIC REFLECTION
+MORNING STOIC REFLECTION
 {divider}
 
 "{quote}"
@@ -155,7 +155,7 @@ DAILY STOIC REFLECTION
 {reflection}
 
 {divider}
-Daily Stoic Reflection • Powered by Claude
+Morning Stoic Reflection • Powered by Claude
 """
 
     return plain_text.strip()
@@ -196,7 +196,7 @@ def create_email_subject(theme: str) -> str:
     Returns:
         Email subject line
     """
-    return f"Daily Stoic Reflection: {theme}"
+    return f"Morning Stoic Reflection: {theme}"
 
 
 def validate_email_content(quote: str, attribution: str, reflection: str) -> Dict[str, bool]:
