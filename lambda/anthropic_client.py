@@ -26,7 +26,7 @@ def build_reflection_prompt(quote: str, attribution: str, theme: str) -> str:
     Returns:
         Formatted prompt string
     """
-    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life.
+    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life. You must not use the first person pronouns "I" or "me" in your reflection.
 
 You have been given this stoic quote to reflect upon:
 
@@ -35,7 +35,7 @@ You have been given this stoic quote to reflect upon:
 
 Current Month's Theme: {theme}
 
-Write a reflection (250-450 words) that:
+Write a reflection (150-350 words) that:
 - Explains the quote's meaning in accessible language
 - Connects it to modern life with a concrete, relatable example
 - Offers practical, actionable guidance the reader can apply today
