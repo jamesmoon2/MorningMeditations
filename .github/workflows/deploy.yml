@@ -1,0 +1,129 @@
+name: CD - Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual deployment
+
+env:
+  AWS_REGION: us-west-2
+  CDK_STACK_NAME: DailyStoicStack
+
+# Required for AWS OIDC authentication
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy CDK Stack to AWS
+    runs-on: ubuntu-latest
+    environment: production  # Use GitHub environment for additional protection
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Node.js for CDK
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install AWS CDK CLI
+        run: npm install -g aws-cdk
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-CDK-Deploy
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: CDK Bootstrap (if needed)
+        run: |
+          # Check if bootstrap stack exists, if not bootstrap
+          if ! aws cloudformation describe-stacks --stack-name CDKToolkit --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Bootstrapping CDK..."
+            cdk bootstrap aws://$(aws sts get-caller-identity --query Account --output text)/${{ env.AWS_REGION }}
+          else
+            echo "CDK already bootstrapped"
+          fi
+
+      - name: CDK Diff
+        run: cdk diff
+        continue-on-error: true  # Don't fail if there are differences
+
+      - name: CDK Deploy
+        run: cdk deploy --require-approval never
+
+      - name: Get S3 bucket name from stack outputs
+        id: get-bucket
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.CDK_STACK_NAME }} \
+            --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+          echo "Bucket name: $BUCKET_NAME"
+
+      - name: Upload configuration files to S3
+        run: |
+          BUCKET_NAME="${{ steps.get-bucket.outputs.bucket_name }}"
+
+          if [ -z "$BUCKET_NAME" ]; then
+            echo "Warning: Could not get bucket name from stack outputs"
+            exit 0
+          fi
+
+          # Upload quotes database
+          if [ -f config/stoic_quotes_365_days.json ]; then
+            aws s3 cp config/stoic_quotes_365_days.json s3://$BUCKET_NAME/config/stoic_quotes_365_days.json
+            echo "Uploaded stoic_quotes_365_days.json"
+          fi
+
+          # Upload recipients (only if it exists and not already in S3)
+          if [ -f config/recipients.json ]; then
+            if ! aws s3 ls s3://$BUCKET_NAME/recipients.json 2>/dev/null; then
+              aws s3 cp config/recipients.json s3://$BUCKET_NAME/recipients.json
+              echo "Uploaded recipients.json (initial)"
+            else
+              echo "Skipped recipients.json (already exists in S3)"
+            fi
+          fi
+
+          # Upload quote history (only if it exists and not already in S3)
+          if [ -f config/quote_history.json ]; then
+            if ! aws s3 ls s3://$BUCKET_NAME/quote_history.json 2>/dev/null; then
+              aws s3 cp config/quote_history.json s3://$BUCKET_NAME/quote_history.json
+              echo "Uploaded quote_history.json (initial)"
+            else
+              echo "Skipped quote_history.json (already exists in S3)"
+            fi
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Stack:** ${{ env.CDK_STACK_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**S3 Bucket:** ${{ steps.get-bucket.outputs.bucket_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY

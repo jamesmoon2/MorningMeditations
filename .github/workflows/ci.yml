@@ -1,0 +1,80 @@
+name: CI - Tests and Code Quality
+
+on:
+  pull_request:
+    branches:
+      - main
+      - 'claude/**'
+  push:
+    branches:
+      - main
+      - 'claude/**'
+
+jobs:
+  test:
+    name: Run Tests and Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Node.js for CDK
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r lambda/requirements.txt
+
+      - name: Install AWS CDK CLI
+        run: npm install -g aws-cdk
+
+      - name: Run code formatting check (Black)
+        run: black --check .
+
+      - name: Run linting (Flake8)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run type checking (MyPy)
+        run: mypy lambda/ infra/ --ignore-missing-imports
+        continue-on-error: true  # MyPy can be strict, make non-blocking initially
+
+      - name: Run unit tests
+        run: pytest tests/ -v --cov=lambda --cov-report=term-missing
+
+      - name: Validate quotes JSON
+        run: python validate_quotes.py
+
+      - name: Run quote loader tests
+        run: python test_quote_loader.py
+
+      - name: Synthesize CDK stack
+        run: cdk synth
+        env:
+          # Use dummy values for synth - actual deployment uses real secrets
+          CDK_DEFAULT_ACCOUNT: '123456789012'
+          CDK_DEFAULT_REGION: 'us-west-2'
+
+  lint-yaml:
+    name: Lint YAML files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: YAML Lint
+        uses: actionshub/yamllint@main
+        with:
+          path: .github/workflows/

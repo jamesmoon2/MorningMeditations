@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM resources for GitHub Actions OIDC authentication for MorningMeditations CI/CD'
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or username
+    Default: jamesmoon2
+
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository name
+    Default: MorningMeditations
+
+  OIDCProviderArn:
+    Type: String
+    Description: ARN of the GitHub OIDC provider (leave empty to create new)
+    Default: ''
+
+Conditions:
+  CreateOIDCProvider: !Equals [!Ref OIDCProviderArn, '']
+
+Resources:
+  # GitHub OIDC Provider (only created if not provided)
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        # GitHub's OIDC thumbprint (valid as of 2024)
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: Name
+          Value: GitHubActionsOIDCProvider
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # IAM Role for GitHub Actions
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: GitHubActions-MorningMeditations-Deploy
+      Description: IAM role for GitHub Actions to deploy MorningMeditations CDK stack
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - CreateOIDCProvider
+                - !GetAtt GitHubOIDCProvider.Arn
+                - !Ref OIDCProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                'token.actions.githubusercontent.com:aud': sts.amazonaws.com
+              StringLike:
+                'token.actions.githubusercontent.com:sub':
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/main'
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/claude/*'
+      ManagedPolicyArns:
+        # CDK requires broad permissions for CloudFormation, IAM, etc.
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      Policies:
+        # Additional IAM permissions needed for CDK (PowerUserAccess doesn't include IAM)
+        - PolicyName: CDKIAMPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: IAMRoleManagement
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:UpdateRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:PassRole
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/DailyStoicStack-*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/cdk-*'
+
+              - Sid: IAMPolicyManagement
+                Effect: Allow
+                Action:
+                  - iam:CreatePolicy
+                  - iam:DeletePolicy
+                  - iam:GetPolicy
+                  - iam:GetPolicyVersion
+                  - iam:ListPolicyVersions
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/DailyStoicStack-*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/cdk-*'
+
+      Tags:
+        - Key: Name
+          Value: GitHubActions-MorningMeditations-Deploy
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Project
+          Value: MorningMeditations
+
+Outputs:
+  RoleArn:
+    Description: ARN of the IAM role for GitHub Actions
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: GitHubActions-MorningMeditations-RoleArn
+
+  OIDCProviderArn:
+    Description: ARN of the GitHub OIDC provider
+    Value: !If
+      - CreateOIDCProvider
+      - !GetAtt GitHubOIDCProvider.Arn
+      - !Ref OIDCProviderArn
+    Export:
+      Name: GitHubActions-OIDC-Provider-Arn
+
+  SetupInstructions:
+    Description: Next steps to configure GitHub repository
+    Value: !Sub |
+      Add the following secret to your GitHub repository:
+
+      Secret Name: AWS_ROLE_ARN
+      Secret Value: ${GitHubActionsRole.Arn}
+
+      Navigate to: https://github.com/${GitHubOrg}/${GitHubRepo}/settings/secrets/actions
