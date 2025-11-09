@@ -101,7 +101,7 @@ class QuoteTracker:
             date: ISO format date string (YYYY-MM-DD)
             quote: The stoic quote text
             attribution: Quote attribution (e.g., "Marcus Aurelius - Meditations 4.3")
-            reflection: The reflection text
+            reflection: The full reflection text
             theme: Monthly theme name
 
         Returns:
@@ -110,15 +110,12 @@ class QuoteTracker:
         if 'quotes' not in history:
             history['quotes'] = []
 
-        # Create a preview of the reflection (first 100 chars)
-        reflection_preview = reflection[:100] + "..." if len(reflection) > 100 else reflection
-
         new_entry = {
             "date": date,
             "quote": quote,
             "attribution": attribution,
             "theme": theme,
-            "reflection_preview": reflection_preview
+            "reflection": reflection
         }
 
         history['quotes'].append(new_entry)
@@ -137,6 +134,39 @@ class QuoteTracker:
             Number of quotes in history
         """
         return len(history.get('quotes', []))
+
+    def get_current_month_quotes(
+        self,
+        history: Dict[str, Any],
+        current_date: datetime
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all quotes from the current month and year.
+
+        Args:
+            history: Quote history dictionary
+            current_date: Current date to determine month and year
+
+        Returns:
+            List of quote entries from the current month
+        """
+        current_month = current_date.month
+        current_year = current_date.year
+
+        filtered_quotes = []
+        for quote_entry in history.get('quotes', []):
+            try:
+                quote_date = datetime.fromisoformat(quote_entry['date'])
+                if quote_date.month == current_month and quote_date.year == current_year:
+                    # Only include quotes from before the current date
+                    if quote_date < current_date:
+                        filtered_quotes.append(quote_entry)
+            except (KeyError, ValueError) as e:
+                logger.warning(f"Skipping invalid quote entry: {e}")
+                continue
+
+        logger.info(f"Found {len(filtered_quotes)} quotes from current month")
+        return filtered_quotes
 
     def cleanup_old_quotes(
         self,
