@@ -15,7 +15,7 @@ def format_html_email(quote: str, attribution: str, reflection: str, theme: str)
     Args:
         quote: The stoic quote text
         attribution: Quote attribution (e.g., "Marcus Aurelius - Meditations 4.3")
-        reflection: The reflection text (250-450 words)
+        reflection: The reflection text (150-250 words)
         theme: Monthly theme name
 
     Returns:
@@ -215,8 +215,8 @@ def validate_email_content(quote: str, attribution: str, reflection: str) -> Dic
         "has_quote": bool(quote and len(quote.strip()) > 0),
         "has_attribution": bool(attribution and len(attribution.strip()) > 0),
         "has_reflection": bool(reflection and len(reflection.strip()) > 0),
-        "reflection_min_length": len(reflection.split()) >= 200,  # Roughly 200 words minimum
-        "reflection_max_length": len(reflection.split()) <= 500,  # Roughly 500 words maximum
+        "reflection_min_length": len(reflection.split()) >= 150,  # 150 words minimum
+        "reflection_max_length": len(reflection.split()) <= 250,  # 250 words maximum
     }
 
     validation["is_valid"] = all([

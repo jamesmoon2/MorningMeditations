@@ -19,55 +19,74 @@ class TestQuoteTracker:
         history = {"quotes": []}
         tracker = QuoteTracker("test-bucket")
 
+        quote = "You have power over your mind - not outside events."
+        attribution = "Marcus Aurelius - Meditations 6.8"
+        reflection = "This is a test reflection about the power of the mind and how we can control our thoughts and reactions to external events."
+        theme = "Mortality and Impermanence"
+
         updated = tracker.add_quote(
             history,
             "2025-10-22",
-            "Marcus Aurelius - Meditations 4.3",
-            "Mortality and Impermanence"
+            quote,
+            attribution,
+            reflection,
+            theme
         )
 
         assert len(updated["quotes"]) == 1
         assert updated["quotes"][0]["date"] == "2025-10-22"
-        assert updated["quotes"][0]["attribution"] == "Marcus Aurelius - Meditations 4.3"
-        assert updated["quotes"][0]["theme"] == "Mortality and Impermanence"
+        assert updated["quotes"][0]["quote"] == quote
+        assert updated["quotes"][0]["attribution"] == attribution
+        assert updated["quotes"][0]["reflection"] == reflection
+        assert updated["quotes"][0]["theme"] == theme
 
-    def test_get_used_quotes_within_range(self):
-        """Test getting quotes used within date range."""
+    def test_get_current_month_quotes(self):
+        """Test getting quotes from current month."""
         today = datetime.now()
-        yesterday = today - timedelta(days=1)
-        last_year = today - timedelta(days=400)
+        this_month = today.replace(day=5)
+        last_month = today - timedelta(days=35)
+
+        quote1 = "You have power over your mind - not outside events."
+        quote2 = "The impediment to action advances action."
+        reflection1 = "Test reflection about power of mind."
+        reflection2 = "Test reflection about obstacles."
 
         history = {
             "quotes": [
                 {
-                    "date": yesterday.strftime("%Y-%m-%d"),
-                    "attribution": "Marcus Aurelius - Meditations 2.1",
+                    "date": this_month.strftime("%Y-%m-%d"),
+                    "quote": quote1,
+                    "attribution": "Marcus Aurelius - Meditations 6.8",
+                    "reflection": reflection1,
                     "theme": "Test"
                 },
                 {
-                    "date": last_year.strftime("%Y-%m-%d"),
-                    "attribution": "Epictetus - Enchiridion 1",
+                    "date": last_month.strftime("%Y-%m-%d"),
+                    "quote": quote2,
+                    "attribution": "Marcus Aurelius - Meditations 5.20",
+                    "reflection": reflection2,
                     "theme": "Test"
                 }
             ]
         }
 
         tracker = QuoteTracker("test-bucket")
-        used = tracker.get_used_quotes(history, days=365)
+        current_month = tracker.get_current_month_quotes(history, today)
 
-        # Should only get the recent quote, not the old one
-        assert len(used) == 1
-        assert "Marcus Aurelius - Meditations 2.1" in used
-        assert "Epictetus - Enchiridion 1" not in used
+        # Should only get quotes from this month
+        assert len(current_month) == 1
+        assert current_month[0]["quote"] == quote1
+        assert current_month[0]["reflection"] == reflection1
 
-    def test_get_used_quotes_empty_history(self):
-        """Test getting used quotes from empty history."""
+    def test_get_current_month_quotes_empty_history(self):
+        """Test getting current month quotes from empty history."""
         history = {"quotes": []}
         tracker = QuoteTracker("test-bucket")
+        today = datetime.now()
 
-        used = tracker.get_used_quotes(history, days=365)
+        current_month = tracker.get_current_month_quotes(history, today)
 
-        assert len(used) == 0
+        assert len(current_month) == 0
 
     def test_get_quote_count(self):
         """Test getting quote count."""
@@ -138,11 +157,18 @@ class TestQuoteTracker:
         history = {}
         tracker = QuoteTracker("test-bucket")
 
+        quote = "Test quote text"
+        attribution = "Test Attribution"
+        reflection = "Test reflection text"
+        theme = "Test Theme"
+
         updated = tracker.add_quote(
             history,
             "2025-10-22",
-            "Test Attribution",
-            "Test Theme"
+            quote,
+            attribution,
+            reflection,
+            theme
         )
 
         assert "quotes" in updated

@@ -90,13 +90,23 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not recipients:
             raise ValueError("No recipients configured")
 
-        # 5. Generate reflection via Anthropic API
+        # 5. Load quote history and get current month's reflections
+        logger.info("Loading quote history from S3...")
+        tracker = QuoteTracker(bucket_name)
+        history = tracker.load_history()
+
+        # Get previous reflections from this month to provide context
+        previous_month_reflections = tracker.get_current_month_quotes(history, current_date)
+        logger.info(f"Found {len(previous_month_reflections)} previous reflections from this month")
+
+        # 6. Generate reflection via Anthropic API
         logger.info("Generating reflection via Anthropic API...")
         reflection = generate_reflection_only(
             quote=quote,
             attribution=attribution,
             theme=theme_name,
-            api_key=anthropic_api_key
+            api_key=anthropic_api_key,
+            previous_reflections=previous_month_reflections
         )
 
         if not reflection:
@@ -109,12 +119,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not validation['is_valid']:
             logger.warning(f"Content validation issues: {validation}")
 
-        # 6. Update history in S3 (for posterity)
+        # 7. Update history in S3 (for posterity)
         logger.info("Updating quote history...")
-        tracker = QuoteTracker(bucket_name)
-        history = tracker.load_history()
 
-        # Add today's entry with reflection preview
+        # Add today's entry with full reflection
         history = tracker.add_quote(history, current_date_str, quote, attribution, reflection, theme_name)
 
         # Cleanup old quotes (keep 400 days for reasonable file size)
@@ -123,7 +131,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         tracker.save_history(history)
         logger.info(f"History updated. Total entries: {tracker.get_quote_count(history)}")
 
-        # 7. Format and send email
+        # 8. Format and send email
         html_content = format_html_email(quote, attribution, reflection, theme_name)
         plain_text = format_plain_text_email(quote, attribution, reflection)
         subject = create_email_subject(theme_name)
@@ -150,7 +158,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 logger.error(f"Failed to send email to {recipient}: {e}")
                 # Continue with other recipients
 
-        # 8. Return success
+        # 9. Return success
         logger.info(
             f"Email sending complete. Success: {success_count}, Failed: {failure_count}"
         )
