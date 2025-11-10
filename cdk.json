@@ -20,7 +20,7 @@
     "@aws-cdk/core:target-partitions": ["aws"],
     "aws-cdk:enableDiffNoFail": "true",
     "@aws-cdk/core:stackRelativeExports": "true",
-    "anthropic_api_key": ""{{ANTHROPIC_API_KEY}}"",
+    "anthropic_api_key": "{{ANTHROPIC_API_KEY}}",
     "sender_email": "reflections@jamescmooney.com",
     "sender_domain": "jamescmooney.com",
     "initial_recipient": "jamesmoon2@gmail.com"
