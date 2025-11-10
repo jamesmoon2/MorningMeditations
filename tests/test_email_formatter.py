@@ -52,14 +52,14 @@ class TestEmailFormatter:
         assert quote in plain
         assert attribution in plain
         assert reflection in plain
-        assert "DAILY STOIC REFLECTION" in plain
+        assert "MORNING STOIC REFLECTION" in plain
 
     def test_create_email_subject(self):
         """Test email subject creation."""
         theme = "Virtue and Character"
         subject = create_email_subject(theme)
 
-        assert "Daily Stoic Reflection" in subject
+        assert "Morning Stoic Reflection" in subject
         assert theme in subject
 
     def test_validate_email_content_valid(self):

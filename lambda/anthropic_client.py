@@ -14,7 +14,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def build_reflection_prompt(quote: str, attribution: str, theme: str) -> str:
+def build_reflection_prompt(
+    quote: str,
+    attribution: str,
+    theme: str,
+    previous_reflections: Optional[List[Dict[str, str]]] = None
+) -> str:
     """
     Build the prompt for Claude to generate a reflection based on a provided quote.
 
@@ -22,12 +27,31 @@ def build_reflection_prompt(quote: str, attribution: str, theme: str) -> str:
         quote: The stoic quote to reflect upon
         attribution: The quote's attribution (e.g., "Marcus Aurelius - Meditations 5.1")
         theme: Monthly theme (e.g., "Discipline and Self-Improvement")
+        previous_reflections: List of previous quotes and reflections from this month
+                             Each dict should have: date, quote, attribution, reflection
 
     Returns:
         Formatted prompt string
     """
-    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life. You must not use the first person pronouns "I" or "me" in your reflection.
+    # Build context section from previous reflections if available
+    context_section = ""
+    if previous_reflections and len(previous_reflections) > 0:
+        context_section = "\n\nPrevious quotes and reflections from this month:\n\n"
+        for entry in previous_reflections:
+            context_section += f"""Date: {entry.get('date', 'Unknown')}
+Quote: "{entry.get('quote', '')}"
+Attribution: {entry.get('attribution', '')}
+Reflection: {entry.get('reflection', '')}
 
+---
+
+"""
+        context_section += """These are examples of reflections already provided to the user this month. Your new reflection should avoid being overly repetitive. While maintaining consistency with the monthly theme, look for fresh angles, different practical applications, and new ways to help the user understand stoic philosophy. Avoid reusing the same examples, metaphors, or phrasing from the previous reflections above.
+
+"""
+
+    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life. You must not use the first person pronouns "I" or "me" in your reflection.
+{context_section}
 You have been given this stoic quote to reflect upon:
 
 "{quote}"
@@ -35,7 +59,7 @@ You have been given this stoic quote to reflect upon:
 
 Current Month's Theme: {theme}
 
-Write a reflection (150-350 words) that:
+Write a reflection (150-250 words) that:
 - Explains the quote's meaning in accessible language
 - Connects it to modern life with a concrete, relatable example
 - Offers practical, actionable guidance the reader can apply today
@@ -193,7 +217,8 @@ def generate_reflection_only(
     quote: str,
     attribution: str,
     theme: str,
-    api_key: str
+    api_key: str,
+    previous_reflections: Optional[List[Dict[str, str]]] = None
 ) -> Optional[str]:
     """
     Generate a reflection based on a provided quote.
@@ -203,6 +228,7 @@ def generate_reflection_only(
         attribution: The quote's attribution (e.g., "Marcus Aurelius - Meditations 5.1")
         theme: Monthly theme name
         api_key: Anthropic API key
+        previous_reflections: List of previous quotes and reflections from this month
 
     Returns:
         The reflection text, or None if generation fails
@@ -215,7 +241,7 @@ def generate_reflection_only(
             )
             # Don't fail, just log warning
 
-        prompt = build_reflection_prompt(quote, attribution, theme)
+        prompt = build_reflection_prompt(quote, attribution, theme, previous_reflections)
         reflection = call_anthropic_api(prompt, api_key)
 
         return reflection
