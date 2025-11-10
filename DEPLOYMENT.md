@@ -356,7 +356,7 @@ The cron expression `cron(0 14 * * ? *)` means:
 - **14:00 UTC** daily
 - Equals **6:00 AM PST** (UTC-8) / **7:00 AM PDT** (UTC-7)
 
-To adjust the time, edit `infra/stoic_stack.py` and change the `hour` parameter, then redeploy with `cdk deploy`.
+To adjust the delivery time after initial deployment, see [MAINTENANCE.md](MAINTENANCE.md#changing-schedule).
 
 ## Step 10: Request SES Production Access (Optional)
 
@@ -439,38 +439,36 @@ While in sandbox mode, you can only send to verified email addresses. To send to
 
 1. **Monitor First Week**: Check that emails arrive daily at 6 AM PT
 2. **Review Costs**: Monitor AWS billing dashboard
-3. **Add Recipients**: Edit `config/recipients.json` and re-upload to S3
-4. **Review Content**: Assess quote quality and reflection length
-5. **Request SES Production Access**: To expand beyond verified recipients
+3. **Request SES Production Access**: To expand beyond verified recipients
+
+For ongoing operations, see [MAINTENANCE.md](MAINTENANCE.md):
+- Adding/removing recipients
+- Updating Lambda code
+- Changing delivery schedule
+- Monitoring and troubleshooting
 
 ## Useful Commands Reference
 
 ```bash
-# Manual Lambda invocation
+# Manual Lambda invocation (for testing)
 aws lambda invoke --function-name DailyStoicSender response.json
 
 # View logs
 aws logs tail /aws/lambda/DailyStoicSender --follow
 
-# Download history
-aws s3 cp s3://$BUCKET_NAME/quote_history.json ./
-
-# Update recipients
-aws s3 cp config/recipients.json s3://$BUCKET_NAME/recipients.json
-
-# Redeploy after code changes
-cdk deploy
-
 # Destroy everything (CAUTION!)
 cdk destroy
 ```
+
+For more operational commands, see [MAINTENANCE.md](MAINTENANCE.md#useful-commands-cheat-sheet).
 
 ## Support Resources
 
 - **AWS Documentation**: https://docs.aws.amazon.com/
 - **CDK Python Reference**: https://docs.aws.amazon.com/cdk/api/v2/python/
 - **Anthropic API Docs**: https://docs.anthropic.com/
-- **Project Documentation**: See [README.md](README.md) and [prd.md](prd.md)
+- **Maintenance Guide**: [MAINTENANCE.md](MAINTENANCE.md)
+- **Project Overview**: [README.md](README.md)
 
 ---
 

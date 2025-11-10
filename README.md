@@ -65,27 +65,11 @@ daily-stoic-reflection/
 └── app.py              # CDK app entry point
 ```
 
-## Setup
+## Setup and Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete setup instructions.
+For complete deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-### Quick Start
-
-```bash
-# Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure AWS credentials
-aws configure
-
-# Deploy infrastructure
-cdk bootstrap  # First time only
-cdk deploy
-```
+For ongoing maintenance and updates, see [MAINTENANCE.md](MAINTENANCE.md).
 
 ## Monthly Themes
 
@@ -104,15 +88,12 @@ cdk deploy
 
 ## Maintenance
 
-See [MAINTENANCE.md](MAINTENANCE.md) for ongoing maintenance instructions.
-
-### Adding Recipients
-
-```bash
-# Edit config/recipients.json
-# Upload to S3
-aws s3 cp config/recipients.json s3://YOUR-BUCKET/recipients.json
-```
+See [MAINTENANCE.md](MAINTENANCE.md) for:
+- Adding/removing recipients
+- Updating Lambda code
+- Changing delivery schedule
+- Monitoring and troubleshooting
+- Cost management
 
 ## Cost Breakdown
 
@@ -127,10 +108,10 @@ aws s3 cp config/recipients.json s3://YOUR-BUCKET/recipients.json
 
 ## Documentation
 
-- [prd.md](prd.md) - Complete Product Requirements Document
-- [projectplan.md](projectplan.md) - Implementation Project Plan
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment Guide
-- [MAINTENANCE.md](MAINTENANCE.md) - Maintenance Guide
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide
+- [MAINTENANCE.md](MAINTENANCE.md) - Ongoing maintenance and operations
+- [prd.md](prd.md) - Product requirements
+- [projectplan.md](projectplan.md) - Implementation plan
 
 ## License
 
