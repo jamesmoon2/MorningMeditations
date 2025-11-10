@@ -118,7 +118,7 @@ def format_html_email(quote: str, attribution: str, reflection: str, theme: str)
         </div>
 
         <div class="footer">
-            Morning Stoic Reflection • Powered by Claude
+            Morning Stoic Reflection • Powered by Claude and James C. Mooney
         </div>
     </div>
 </body>
@@ -155,7 +155,7 @@ MORNING STOIC REFLECTION
 {reflection}
 
 {divider}
-Morning Stoic Reflection • Powered by Claude
+Morning Stoic Reflection • Powered by Claude and James C. Mooney
 """
 
     return plain_text.strip()
