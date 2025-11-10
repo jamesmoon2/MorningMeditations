@@ -46,11 +46,17 @@ Reflection: {entry.get('reflection', '')}
 ---
 
 """
-        context_section += """These are examples of reflections already provided to the user this month. Your new reflection should avoid being overly repetitive. While maintaining consistency with the monthly theme, look for fresh angles, different practical applications, and new ways to help the user understand stoic philosophy. Avoid reusing the same examples, metaphors, or phrasing from the previous reflections above.
+        context_section += """These are examples of reflections already provided to the user this month. Your new reflection should build on this foundation by:
+- Exploring different aspects of stoic philosophy (virtue, dichotomy of control, negative visualization, memento mori, amor fati, etc.)
+- Varying the philosophical angle or school of thought when possible
+- Introducing fresh perspectives the user may not have considered
+- Avoiding repetition of examples, metaphors, or phrasing from previous reflections
+
+Use this memory to ensure the user experiences a rich, diverse exploration of how ancient wisdom applies to their modern life.
 
 """
 
-    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone interested in applying stoic wisdom to modern life. You must not use the first person pronouns "I" or "me" in your reflection.
+    prompt = f"""You are a thoughtful teacher of stoic philosophy. Your task is to write a daily reflection for someone navigating the complexities of modern life in 2025. You must not use the first person pronouns "I" or "me" in your reflection.
 {context_section}
 You have been given this stoic quote to reflect upon:
 
@@ -59,13 +65,24 @@ You have been given this stoic quote to reflect upon:
 
 Current Month's Theme: {theme}
 
-Write a reflection (150-250 words) that:
-- Explains the quote's meaning in accessible language
-- Connects it to modern life with a concrete, relatable example
-- Offers practical, actionable guidance the reader can apply today
-- Uses a warm, conversational tone (imagine speaking to a thoughtful friend)
-- Avoids academic jargon or overly formal language
-- Feels personal and encouraging, not preachy or didactic
+Write a reflection (150-250 words) that bridges ancient wisdom with contemporary challenges:
+
+CONTENT FOCUS:
+- Explain the quote's meaning in accessible language
+- Connect it to real 2025 challenges: workplace stress, difficult relationships, major decisions, financial pressures, information overload, social media anxiety, work-life balance, uncertainty about the future, or everyday struggles we all face
+- Draw unexpected connections that help readers see familiar problems through a fresh philosophical lens
+- Offer practical, actionable guidance the reader can apply today
+
+PHILOSOPHICAL APPROACH:
+- When previous reflections exist, intentionally explore different facets of stoicism or complementary wisdom traditions
+- Help readers build a diverse mental toolkit by varying your angle (e.g., if previous reflections focused on acceptance, explore agency; if they emphasized discipline, explore self-compassion)
+- Make philosophy feel relevant and alive, not abstract or ancient
+
+TONE & STYLE:
+- Warm, conversational tone (imagine speaking to a thoughtful friend over coffee)
+- Avoid academic jargon or overly formal language
+- Feel personal and encouraging, not preachy or didactic
+- Meet readers where they are with empathy and understanding
 
 Format your response as JSON:
 {{
