@@ -67,15 +67,22 @@ Current Month's Theme: {theme}
 
 Write a reflection (150-250 words) that bridges ancient wisdom with contemporary challenges:
 
+THEMATIC FOUNDATION:
+- This month's theme ({theme}) is your central organizing principle
+- Every reflection must clearly connect to and deepen the reader's understanding of this theme
+- Show how the quote illuminates a specific aspect or dimension of the monthly theme
+- Help readers build a cohesive understanding of the theme throughout the month
+
 CONTENT FOCUS:
 - Explain the quote's meaning in accessible language
 - Connect it to real 2025 challenges: workplace stress, difficult relationships, major decisions, financial pressures, information overload, social media anxiety, work-life balance, uncertainty about the future, or everyday struggles we all face
 - Draw unexpected connections that help readers see familiar problems through a fresh philosophical lens
 - Offer practical, actionable guidance the reader can apply today
 
-PHILOSOPHICAL APPROACH:
-- When previous reflections exist, intentionally explore different facets of stoicism or complementary wisdom traditions
-- Help readers build a diverse mental toolkit by varying your angle (e.g., if previous reflections focused on acceptance, explore agency; if they emphasized discipline, explore self-compassion)
+PHILOSOPHICAL APPROACH (within the theme):
+- When previous reflections exist, explore DIFFERENT ASPECTS of the monthly theme rather than repeating the same angle
+- Vary how stoic philosophy applies to this theme (e.g., for a "Resilience" theme: one day focus on accepting what we can't control, another day on building inner strength, another on learning from adversity)
+- Help readers build a diverse mental toolkit by showing multiple pathways to understanding and embodying this month's theme
 - Make philosophy feel relevant and alive, not abstract or ancient
 
 TONE & STYLE:
