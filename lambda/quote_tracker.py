@@ -28,7 +28,7 @@ class QuoteTracker:
         """
         self.bucket_name = bucket_name
         self.history_key = history_key
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3")
 
     def load_history(self) -> Dict[str, Any]:
         """
@@ -42,17 +42,16 @@ class QuoteTracker:
         """
         try:
             response = self.s3_client.get_object(
-                Bucket=self.bucket_name,
-                Key=self.history_key
+                Bucket=self.bucket_name, Key=self.history_key
             )
-            content = response['Body'].read().decode('utf-8')
+            content = response["Body"].read().decode("utf-8")
             history = json.loads(content)
             logger.info(f"Loaded history with {len(history.get('quotes', []))} quotes")
             return history
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'NoSuchKey':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchKey":
                 # File doesn't exist yet, return empty history
                 logger.info("No existing history file found, starting fresh")
                 return {"quotes": []}
@@ -75,8 +74,8 @@ class QuoteTracker:
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
                 Key=self.history_key,
-                Body=content.encode('utf-8'),
-                ContentType='application/json'
+                Body=content.encode("utf-8"),
+                ContentType="application/json",
             )
             logger.info(f"Saved history with {len(history.get('quotes', []))} quotes")
 
@@ -91,7 +90,7 @@ class QuoteTracker:
         quote: str,
         attribution: str,
         reflection: str,
-        theme: str
+        theme: str,
     ) -> Dict[str, Any]:
         """
         Add a new quote and reflection to the history for archival purposes.
@@ -107,18 +106,18 @@ class QuoteTracker:
         Returns:
             Updated history dictionary
         """
-        if 'quotes' not in history:
-            history['quotes'] = []
+        if "quotes" not in history:
+            history["quotes"] = []
 
         new_entry = {
             "date": date,
             "quote": quote,
             "attribution": attribution,
             "theme": theme,
-            "reflection": reflection
+            "reflection": reflection,
         }
 
-        history['quotes'].append(new_entry)
+        history["quotes"].append(new_entry)
         logger.info(f"Added entry to history: {attribution} on {date}")
 
         return history
@@ -133,12 +132,10 @@ class QuoteTracker:
         Returns:
             Number of quotes in history
         """
-        return len(history.get('quotes', []))
+        return len(history.get("quotes", []))
 
     def get_current_month_quotes(
-        self,
-        history: Dict[str, Any],
-        current_date: datetime
+        self, history: Dict[str, Any], current_date: datetime
     ) -> List[Dict[str, Any]]:
         """
         Get all quotes from the current month and year.
@@ -154,10 +151,13 @@ class QuoteTracker:
         current_year = current_date.year
 
         filtered_quotes = []
-        for quote_entry in history.get('quotes', []):
+        for quote_entry in history.get("quotes", []):
             try:
-                quote_date = datetime.fromisoformat(quote_entry['date'])
-                if quote_date.month == current_month and quote_date.year == current_year:
+                quote_date = datetime.fromisoformat(quote_entry["date"])
+                if (
+                    quote_date.month == current_month
+                    and quote_date.year == current_year
+                ):
                     # Only include quotes from before the current date
                     if quote_date < current_date:
                         filtered_quotes.append(quote_entry)
@@ -169,9 +169,7 @@ class QuoteTracker:
         return filtered_quotes
 
     def cleanup_old_quotes(
-        self,
-        history: Dict[str, Any],
-        keep_days: int = 400
+        self, history: Dict[str, Any], keep_days: int = 400
     ) -> Dict[str, Any]:
         """
         Remove quotes older than specified days to keep file size manageable.
@@ -185,19 +183,19 @@ class QuoteTracker:
             Updated history dictionary with old quotes removed
         """
         cutoff_date = datetime.now() - timedelta(days=keep_days)
-        original_count = len(history.get('quotes', []))
+        original_count = len(history.get("quotes", []))
 
         filtered_quotes = []
-        for quote_entry in history.get('quotes', []):
+        for quote_entry in history.get("quotes", []):
             try:
-                quote_date = datetime.fromisoformat(quote_entry['date'])
+                quote_date = datetime.fromisoformat(quote_entry["date"])
                 if quote_date >= cutoff_date:
                     filtered_quotes.append(quote_entry)
             except (KeyError, ValueError) as e:
                 logger.warning(f"Skipping invalid quote entry during cleanup: {e}")
                 continue
 
-        history['quotes'] = filtered_quotes
+        history["quotes"] = filtered_quotes
         removed_count = original_count - len(filtered_quotes)
 
         if removed_count > 0:

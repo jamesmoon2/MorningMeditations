@@ -172,18 +172,18 @@ def format_reflection_paragraphs(reflection: str) -> str:
         HTML formatted reflection with <p> tags
     """
     # Split on double newlines to detect paragraphs
-    paragraphs = reflection.split('\n\n')
+    paragraphs = reflection.split("\n\n")
 
     # Escape HTML and wrap in <p> tags
     formatted_paragraphs = []
     for para in paragraphs:
         # Remove extra whitespace and newlines within paragraph
-        cleaned = ' '.join(para.split())
+        cleaned = " ".join(para.split())
         if cleaned:  # Only add non-empty paragraphs
             escaped = html.escape(cleaned)
             formatted_paragraphs.append(f"<p>{escaped}</p>")
 
-    return '\n            '.join(formatted_paragraphs)
+    return "\n            ".join(formatted_paragraphs)
 
 
 def create_email_subject(theme: str) -> str:
@@ -199,7 +199,9 @@ def create_email_subject(theme: str) -> str:
     return f"Morning Stoic Reflection: {theme}"
 
 
-def validate_email_content(quote: str, attribution: str, reflection: str) -> Dict[str, bool]:
+def validate_email_content(
+    quote: str, attribution: str, reflection: str
+) -> Dict[str, bool]:
     """
     Validate email content meets basic requirements.
 
@@ -219,11 +221,13 @@ def validate_email_content(quote: str, attribution: str, reflection: str) -> Dic
         "reflection_max_length": len(reflection.split()) <= 250,  # 250 words maximum
     }
 
-    validation["is_valid"] = all([
-        validation["has_quote"],
-        validation["has_attribution"],
-        validation["has_reflection"],
-        validation["reflection_min_length"]
-    ])
+    validation["is_valid"] = all(
+        [
+            validation["has_quote"],
+            validation["has_attribution"],
+            validation["has_reflection"],
+            validation["reflection_min_length"],
+        ]
+    )
 
     return validation

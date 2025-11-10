@@ -25,12 +25,7 @@ class TestQuoteTracker:
         theme = "Mortality and Impermanence"
 
         updated = tracker.add_quote(
-            history,
-            "2025-10-22",
-            quote,
-            attribution,
-            reflection,
-            theme
+            history, "2025-10-22", quote, attribution, reflection, theme
         )
 
         assert len(updated["quotes"]) == 1
@@ -58,15 +53,15 @@ class TestQuoteTracker:
                     "quote": quote1,
                     "attribution": "Marcus Aurelius - Meditations 6.8",
                     "reflection": reflection1,
-                    "theme": "Test"
+                    "theme": "Test",
                 },
                 {
                     "date": last_month.strftime("%Y-%m-%d"),
                     "quote": quote2,
                     "attribution": "Marcus Aurelius - Meditations 5.20",
                     "reflection": reflection2,
-                    "theme": "Test"
-                }
+                    "theme": "Test",
+                },
             ]
         }
 
@@ -94,7 +89,7 @@ class TestQuoteTracker:
             "quotes": [
                 {"date": "2025-01-01", "attribution": "Test 1", "theme": "Test"},
                 {"date": "2025-01-02", "attribution": "Test 2", "theme": "Test"},
-                {"date": "2025-01-03", "attribution": "Test 3", "theme": "Test"}
+                {"date": "2025-01-03", "attribution": "Test 3", "theme": "Test"},
             ]
         }
 
@@ -114,13 +109,13 @@ class TestQuoteTracker:
                 {
                     "date": old_date.strftime("%Y-%m-%d"),
                     "attribution": "Old Quote",
-                    "theme": "Test"
+                    "theme": "Test",
                 },
                 {
                     "date": recent_date.strftime("%Y-%m-%d"),
                     "attribution": "Recent Quote",
-                    "theme": "Test"
-                }
+                    "theme": "Test",
+                },
             ]
         }
 
@@ -141,7 +136,7 @@ class TestQuoteTracker:
                 {
                     "date": recent_date.strftime("%Y-%m-%d"),
                     "attribution": "Recent Quote",
-                    "theme": "Test"
+                    "theme": "Test",
                 }
             ]
         }
@@ -163,12 +158,7 @@ class TestQuoteTracker:
         theme = "Test Theme"
 
         updated = tracker.add_quote(
-            history,
-            "2025-10-22",
-            quote,
-            attribution,
-            reflection,
-            theme
+            history, "2025-10-22", quote, attribution, reflection, theme
         )
 
         assert "quotes" in updated

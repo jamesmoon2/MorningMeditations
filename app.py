@@ -27,8 +27,8 @@ StoicStack(
     tags={
         "Project": "DailyStoicReflection",
         "ManagedBy": "CDK",
-        "Environment": "Production"
-    }
+        "Environment": "Production",
+    },
 )
 
 # Synthesize CloudFormation template

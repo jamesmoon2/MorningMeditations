@@ -26,7 +26,7 @@ class QuoteLoader:
             bucket_name: S3 bucket containing the quotes database
         """
         self.bucket_name = bucket_name
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3")
         self._quotes_cache: Optional[Dict[str, Any]] = None
 
     def load_quotes_database(self) -> Dict[str, Any]:
@@ -43,20 +43,21 @@ class QuoteLoader:
             return self._quotes_cache
 
         try:
-            logger.info(f"Loading quotes database from s3://{self.bucket_name}/config/stoic_quotes_365_days.json")
+            logger.info(
+                f"Loading quotes database from s3://{self.bucket_name}/config/stoic_quotes_365_days.json"
+            )
             response = self.s3_client.get_object(
-                Bucket=self.bucket_name,
-                Key='config/stoic_quotes_365_days.json'
+                Bucket=self.bucket_name, Key="config/stoic_quotes_365_days.json"
             )
 
-            quotes_data = json.loads(response['Body'].read().decode('utf-8'))
+            quotes_data = json.loads(response["Body"].read().decode("utf-8"))
             self._quotes_cache = quotes_data
             logger.info("Successfully loaded quotes database")
             return quotes_data
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'NoSuchKey':
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchKey":
                 logger.error("Quotes database not found in S3")
                 raise Exception("stoic_quotes_365_days.json not found in S3 bucket")
             else:
@@ -85,11 +86,11 @@ class QuoteLoader:
         quotes_db = self.load_quotes_database()
 
         # Get month name (lowercase)
-        month_name = date.strftime('%B').lower()
+        month_name = date.strftime("%B").lower()
         day_num = date.day
 
         # Handle leap year: Feb 29 -> use Feb 28
-        if month_name == 'february' and day_num == 29:
+        if month_name == "february" and day_num == 29:
             logger.info("Leap year detected: Using February 28 quote for February 29")
             day_num = 28
 
@@ -101,12 +102,12 @@ class QuoteLoader:
 
         # Find quote for this day
         for quote_entry in month_quotes:
-            if quote_entry['day'] == day_num:
+            if quote_entry["day"] == day_num:
                 logger.info(f"Found quote for {month_name.title()} {day_num}")
                 return {
-                    'quote': quote_entry['quote'],
-                    'attribution': quote_entry['attribution'],
-                    'theme': quote_entry['theme']
+                    "quote": quote_entry["quote"],
+                    "attribution": quote_entry["attribution"],
+                    "theme": quote_entry["theme"],
                 }
 
         # If we get here, the day wasn't found
@@ -126,18 +127,18 @@ class QuoteLoader:
         quotes_db = self.load_quotes_database()
 
         expected_days = {
-            'january': 31,
-            'february': 28,  # Non-leap year
-            'march': 31,
-            'april': 30,
-            'may': 31,
-            'june': 30,
-            'july': 31,
-            'august': 31,
-            'september': 30,
-            'october': 31,
-            'november': 30,
-            'december': 31
+            "january": 31,
+            "february": 28,  # Non-leap year
+            "march": 31,
+            "april": 30,
+            "may": 31,
+            "june": 30,
+            "july": 31,
+            "august": 31,
+            "september": 30,
+            "october": 31,
+            "november": 30,
+            "december": 31,
         }
 
         total_quotes = 0
@@ -146,7 +147,9 @@ class QuoteLoader:
 
         for month, expected_count in expected_days.items():
             if month not in quotes_db:
-                missing_days.extend([(month, day) for day in range(1, expected_count + 1)])
+                missing_days.extend(
+                    [(month, day) for day in range(1, expected_count + 1)]
+                )
                 continue
 
             month_quotes = quotes_db[month]
@@ -155,7 +158,7 @@ class QuoteLoader:
             # Check for all days present
             days_found = set()
             for quote_entry in month_quotes:
-                day = quote_entry.get('day')
+                day = quote_entry.get("day")
                 if day in days_found:
                     duplicate_days.append((month, day))
                 days_found.add(day)
@@ -165,14 +168,16 @@ class QuoteLoader:
                 if day not in days_found:
                     missing_days.append((month, day))
 
-        is_complete = len(missing_days) == 0 and len(duplicate_days) == 0 and total_quotes == 365
+        is_complete = (
+            len(missing_days) == 0 and len(duplicate_days) == 0 and total_quotes == 365
+        )
 
         validation_result = {
-            'complete': is_complete,
-            'total_quotes': total_quotes,
-            'expected_quotes': 365,
-            'missing_days': missing_days,
-            'duplicate_days': duplicate_days
+            "complete": is_complete,
+            "total_quotes": total_quotes,
+            "expected_quotes": 365,
+            "missing_days": missing_days,
+            "duplicate_days": duplicate_days,
         }
 
         if is_complete:

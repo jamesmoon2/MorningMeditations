@@ -18,7 +18,7 @@ def build_reflection_prompt(
     quote: str,
     attribution: str,
     theme: str,
-    previous_reflections: Optional[List[Dict[str, str]]] = None
+    previous_reflections: Optional[List[Dict[str, str]]] = None,
 ) -> str:
     """
     Build the prompt for Claude to generate a reflection based on a provided quote.
@@ -101,19 +101,16 @@ def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> str:
             model="claude-sonnet-4-5-20250929",
             max_tokens=2000,
             temperature=1.0,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            timeout=timeout
+            messages=[{"role": "user", "content": prompt}],
+            timeout=timeout,
         )
 
         # Extract text from response
         response_text = response.content[0].text
 
-        logger.info(f"Received response from Anthropic API ({len(response_text)} chars)")
+        logger.info(
+            f"Received response from Anthropic API ({len(response_text)} chars)"
+        )
 
         # Parse the response
         reflection = parse_reflection_response(response_text)
@@ -143,9 +140,7 @@ def parse_reflection_response(response_text: str) -> str:
     try:
         # Try to extract JSON from markdown code blocks first
         json_match = re.search(
-            r'```(?:json)?\s*(\{.*?\})\s*```',
-            response_text,
-            re.DOTALL
+            r"```(?:json)?\s*(\{.*?\})\s*```", response_text, re.DOTALL
         )
 
         if json_match:
@@ -160,16 +155,16 @@ def parse_reflection_response(response_text: str) -> str:
         data = json.loads(json_str)
 
         # Validate reflection field
-        if 'reflection' not in data:
+        if "reflection" not in data:
             raise ValueError("Missing required field: reflection")
-        if not data['reflection'] or not isinstance(data['reflection'], str):
+        if not data["reflection"] or not isinstance(data["reflection"], str):
             raise ValueError("Invalid value for field: reflection")
 
         logger.info("Successfully parsed Anthropic response")
-        reflection_length = len(data['reflection'])
+        reflection_length = len(data["reflection"])
         logger.info(f"Reflection length: {reflection_length} characters")
 
-        return data['reflection'].strip()
+        return data["reflection"].strip()
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON from response: {e}")
@@ -194,20 +189,15 @@ def validate_attribution_format(attribution: str) -> bool:
         True if valid format, False otherwise
     """
     # Should contain author name and work separated by dash
-    if ' - ' not in attribution:
+    if " - " not in attribution:
         return False
 
-    parts = attribution.split(' - ')
+    parts = attribution.split(" - ")
     if len(parts) < 2:
         return False
 
     # Check for known authors
-    known_authors = [
-        'Marcus Aurelius',
-        'Epictetus',
-        'Seneca',
-        'Musonius Rufus'
-    ]
+    known_authors = ["Marcus Aurelius", "Epictetus", "Seneca", "Musonius Rufus"]
 
     author = parts[0].strip()
     return any(known in author for known in known_authors)
@@ -218,7 +208,7 @@ def generate_reflection_only(
     attribution: str,
     theme: str,
     api_key: str,
-    previous_reflections: Optional[List[Dict[str, str]]] = None
+    previous_reflections: Optional[List[Dict[str, str]]] = None,
 ) -> Optional[str]:
     """
     Generate a reflection based on a provided quote.
@@ -236,12 +226,12 @@ def generate_reflection_only(
     try:
         # Validate attribution format
         if not validate_attribution_format(attribution):
-            logger.warning(
-                f"Attribution format may be unusual: {attribution}"
-            )
+            logger.warning(f"Attribution format may be unusual: {attribution}")
             # Don't fail, just log warning
 
-        prompt = build_reflection_prompt(quote, attribution, theme, previous_reflections)
+        prompt = build_reflection_prompt(
+            quote, attribution, theme, previous_reflections
+        )
         reflection = call_anthropic_api(prompt, api_key)
 
         return reflection

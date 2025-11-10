@@ -14,7 +14,7 @@ from aws_cdk import (
     aws_events_targets as targets,
     aws_iam as iam,
     aws_logs as logs,
-    CfnOutput
+    CfnOutput,
 )
 from constructs import Construct
 
@@ -29,23 +29,28 @@ class StoicStack(Stack):
         anthropic_api_key = self.node.try_get_context("anthropic_api_key")
         sender_email = self.node.try_get_context("sender_email")
 
-        if not anthropic_api_key or anthropic_api_key == "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY":
+        if (
+            not anthropic_api_key
+            or anthropic_api_key == "REPLACE_WITH_YOUR_ANTHROPIC_API_KEY"
+        ):
             print("WARNING: ANTHROPIC_API_KEY not set in cdk.json context")
 
         # ===== S3 Bucket for State Management =====
         bucket = s3.Bucket(
-            self, "StoicBucket",
+            self,
+            "StoicBucket",
             bucket_name=None,  # Auto-generate unique name
             versioned=True,  # Enable versioning for safety
             encryption=s3.BucketEncryption.S3_MANAGED,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.RETAIN,  # Keep bucket if stack is deleted
-            auto_delete_objects=False  # Don't auto-delete on stack deletion
+            auto_delete_objects=False,  # Don't auto-delete on stack deletion
         )
 
         # ===== Lambda Function =====
         lambda_fn = lambda_.Function(
-            self, "DailyStoicSender",
+            self,
+            "DailyStoicSender",
             function_name="DailyStoicSender",
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="handler.lambda_handler",
@@ -58,7 +63,7 @@ class StoicStack(Stack):
                 "ANTHROPIC_API_KEY": anthropic_api_key or "MISSING_API_KEY",
             },
             log_retention=logs.RetentionDays.ONE_WEEK,
-            description="Generates and sends daily stoic reflections via email"
+            description="Generates and sends daily stoic reflections via email",
         )
 
         # Grant Lambda permissions to read/write S3 bucket
@@ -68,11 +73,10 @@ class StoicStack(Stack):
         lambda_fn.add_to_role_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
-                actions=[
-                    "ses:SendEmail",
-                    "ses:SendRawEmail"
-                ],
-                resources=["*"]  # SES doesn't support resource-level permissions for these actions
+                actions=["ses:SendEmail", "ses:SendRawEmail"],
+                resources=[
+                    "*"
+                ],  # SES doesn't support resource-level permissions for these actions
             )
         )
 
@@ -84,7 +88,8 @@ class StoicStack(Stack):
         # Adjust to 13:00 UTC if you prefer 6 AM PDT (will be 5 AM during PST)
 
         rule = events.Rule(
-            self, "DailyTrigger",
+            self,
+            "DailyTrigger",
             rule_name="DailyStoicTrigger",
             description="Triggers daily stoic reflection at 6 AM PT",
             schedule=events.Schedule.cron(
@@ -92,9 +97,9 @@ class StoicStack(Stack):
                 hour="14",  # 6 AM PST / 7 AM PDT
                 month="*",
                 week_day="*",
-                year="*"
+                year="*",
             ),
-            enabled=True
+            enabled=True,
         )
 
         # Add Lambda as target
@@ -102,31 +107,35 @@ class StoicStack(Stack):
 
         # ===== CloudFormation Outputs =====
         CfnOutput(
-            self, "BucketName",
+            self,
+            "BucketName",
             value=bucket.bucket_name,
             description="S3 bucket name for state files",
-            export_name=f"{self.stack_name}-BucketName"
+            export_name=f"{self.stack_name}-BucketName",
         )
 
         CfnOutput(
-            self, "LambdaFunctionName",
+            self,
+            "LambdaFunctionName",
             value=lambda_fn.function_name,
             description="Lambda function name",
-            export_name=f"{self.stack_name}-LambdaFunctionName"
+            export_name=f"{self.stack_name}-LambdaFunctionName",
         )
 
         CfnOutput(
-            self, "LambdaFunctionArn",
+            self,
+            "LambdaFunctionArn",
             value=lambda_fn.function_arn,
             description="Lambda function ARN",
-            export_name=f"{self.stack_name}-LambdaFunctionArn"
+            export_name=f"{self.stack_name}-LambdaFunctionArn",
         )
 
         CfnOutput(
-            self, "EventRuleName",
+            self,
+            "EventRuleName",
             value=rule.rule_name,
             description="EventBridge rule name",
-            export_name=f"{self.stack_name}-EventRuleName"
+            export_name=f"{self.stack_name}-EventRuleName",
         )
 
         # Store references for potential use

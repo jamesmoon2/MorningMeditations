@@ -9,6 +9,7 @@ from typing import Dict, TypedDict
 
 class ThemeInfo(TypedDict):
     """Type definition for theme information."""
+
     name: str
     description: str
 
@@ -17,52 +18,52 @@ class ThemeInfo(TypedDict):
 MONTHLY_THEMES: Dict[int, ThemeInfo] = {
     1: {
         "name": "Discipline and Self-Improvement",
-        "description": "Focus on building habits, self-control, and starting fresh"
+        "description": "Focus on building habits, self-control, and starting fresh",
     },
     2: {
         "name": "Relationships and Community",
-        "description": "Our connections to others, love, friendship, and social virtue"
+        "description": "Our connections to others, love, friendship, and social virtue",
     },
     3: {
         "name": "Resilience and Adversity",
-        "description": "Facing challenges, growing through difficulty, and mental toughness"
+        "description": "Facing challenges, growing through difficulty, and mental toughness",
     },
     4: {
         "name": "Nature and Acceptance",
-        "description": "Living in accordance with nature, accepting what is"
+        "description": "Living in accordance with nature, accepting what is",
     },
     5: {
         "name": "Virtue and Character",
-        "description": "The four cardinal virtues (wisdom, justice, courage, temperance)"
+        "description": "The four cardinal virtues (wisdom, justice, courage, temperance)",
     },
     6: {
         "name": "Wisdom and Philosophy",
-        "description": "The love of wisdom, continuous learning, and philosophical practice"
+        "description": "The love of wisdom, continuous learning, and philosophical practice",
     },
     7: {
         "name": "Freedom and Autonomy",
-        "description": "Inner freedom, independence of mind, and self-sufficiency"
+        "description": "Inner freedom, independence of mind, and self-sufficiency",
     },
     8: {
         "name": "Patience and Endurance",
-        "description": "Long-term thinking, persistence, and bearing hardship"
+        "description": "Long-term thinking, persistence, and bearing hardship",
     },
     9: {
         "name": "Purpose and Calling",
-        "description": "Finding meaning, living deliberately, and fulfilling your role"
+        "description": "Finding meaning, living deliberately, and fulfilling your role",
     },
     10: {
         "name": "Mortality and Impermanence",
-        "description": "Memento mori, making the most of time, and perspective on death"
+        "description": "Memento mori, making the most of time, and perspective on death",
     },
     11: {
         "name": "Gratitude and Contentment",
-        "description": "Appreciating what we have, finding sufficiency, and thanksgiving"
+        "description": "Appreciating what we have, finding sufficiency, and thanksgiving",
     },
     12: {
         "name": "Reflection and Legacy",
-        "description": "Year-end contemplation, examining life, and what we leave behind"
-    }
+        "description": "Year-end contemplation, examining life, and what we leave behind",
+    },
 }
 
 

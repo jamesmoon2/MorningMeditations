@@ -12,7 +12,7 @@ from email_formatter import (
     format_plain_text_email,
     create_email_subject,
     validate_email_content,
-    format_reflection_paragraphs
+    format_reflection_paragraphs,
 )
 
 

@@ -14,19 +14,19 @@ from datetime import datetime
 def test_quote_loader():
     """Test the quote loader with various dates."""
     # Load the quotes database
-    quotes_file = Path(__file__).parent / 'config' / 'stoic_quotes_365_days.json'
+    quotes_file = Path(__file__).parent / "config" / "stoic_quotes_365_days.json"
 
-    with open(quotes_file, 'r') as f:
+    with open(quotes_file, "r") as f:
         quotes_db = json.load(f)
 
     # Test dates
     test_dates = [
-        datetime(2025, 1, 1),   # January 1
+        datetime(2025, 1, 1),  # January 1
         datetime(2025, 2, 14),  # February 14 (Valentine's Day)
         datetime(2024, 2, 29),  # Leap year (should use Feb 28)
         datetime(2025, 6, 15),  # June 15
-        datetime(2025, 10, 26), # October 26 (today)
-        datetime(2025, 12, 31), # December 31
+        datetime(2025, 10, 26),  # October 26 (today)
+        datetime(2025, 12, 31),  # December 31
     ]
 
     print("Testing quote loader...")
@@ -35,11 +35,11 @@ def test_quote_loader():
     all_passed = True
 
     for test_date in test_dates:
-        month_name = test_date.strftime('%B').lower()
+        month_name = test_date.strftime("%B").lower()
         day_num = test_date.day
 
         # Handle leap year
-        if month_name == 'february' and day_num == 29:
+        if month_name == "february" and day_num == 29:
             day_num = 28
             print(f"Testing {test_date.strftime('%B %d, %Y')} (Leap year → Feb 28):")
         else:
@@ -50,7 +50,7 @@ def test_quote_loader():
         quote_found = None
 
         for quote_entry in month_quotes:
-            if quote_entry['day'] == day_num:
+            if quote_entry["day"] == day_num:
                 quote_found = quote_entry
                 break
 
@@ -73,5 +73,5 @@ def test_quote_loader():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(test_quote_loader())
