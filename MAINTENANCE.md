@@ -127,12 +127,40 @@ Edit files in the `lambda/` directory:
 - `quote_tracker.py` - History archival
 - `themes.py` - Monthly themes
 
-### 2. Test Locally (Optional)
+### 2. Rebuild Lambda Package (If Needed)
+
+**When to rebuild:**
+- You modified any `.py` files in `lambda/`
+- You updated `lambda/requirements.txt`
+- You want to ensure Linux-compatible dependencies
+
+**When you can skip rebuilding:**
+- You only changed infrastructure code (`infra/stoic_stack.py`)
+- You updated `cdk.json` configuration
+- You modified IAM permissions or EventBridge rules
+
+**To rebuild:**
+```bash
+# On Windows:
+powershell -ExecutionPolicy Bypass -File build_lambda.ps1
+
+# On macOS/Linux, ensure you have dependencies installed for the correct platform
+# The build script copies code from lambda/ to lambda_linux/ and installs Linux-compatible dependencies
+```
+
+The build script:
+- Cleans the `lambda_linux/` directory
+- Copies Python files from `lambda/` to `lambda_linux/`
+- Installs Linux-compatible dependencies (manylinux2014_x86_64)
+
+**Note:** The `lambda/` directory is your source code. The `lambda_linux/` directory is generated - don't edit it directly.
+
+### 3. Test Locally (Optional)
 
 Run unit tests:
 ```bash
 # Activate virtual environment
-source .venv/bin/activate
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
 # Run tests
 pytest tests/ -v
@@ -141,16 +169,16 @@ pytest tests/ -v
 pytest tests/test_email_formatter.py -v
 ```
 
-### 3. Deploy Updated Code
+### 4. Deploy Updated Code
 
 ```bash
-# Redeploy the stack (CDK will detect code changes)
+# Deploy the stack (CDK will detect code changes)
 cdk deploy
 ```
 
-CDK automatically packages the `lambda/` directory and deploys it.
+CDK automatically packages the `lambda_linux/` directory (if you rebuilt) or `lambda/` directory and deploys it. Deployment typically takes 30-40 seconds.
 
-### 4. Verify Deployment
+### 5. Verify Deployment
 
 ```bash
 # Manually invoke to test
@@ -159,9 +187,32 @@ aws lambda invoke \
   --region us-east-1 \
   response.json
 
+# Check the response
+cat response.json
+
 # Check logs
 aws logs tail /aws/lambda/DailyStoicSender --follow --region us-east-1
 ```
+
+### Common Issues
+
+**Issue: "Module not found" error after deployment**
+- **Solution**: You forgot to rebuild. Run `build_lambda.ps1`, then deploy again.
+
+**Issue: Lambda still using old code**
+- **Solution**: CDK may cache unchanged code. Force rebuild:
+  ```bash
+  rm -rf lambda_linux/  # or Remove-Item -Recurse -Force lambda_linux on Windows
+  powershell -ExecutionPolicy Bypass -File build_lambda.ps1
+  cdk deploy
+  ```
+
+**Issue: Build script fails**
+- **Cause**: Usually pip or Python environment issues
+- **Solution**:
+  1. Ensure virtual environment is activated
+  2. Update pip: `pip install --upgrade pip`
+  3. Try build script again
 
 ---
 
@@ -601,10 +652,10 @@ aws ce get-cost-and-usage --time-period Start=2025-10-01,End=2025-10-31 \
 
 - **AWS Support**: https://console.aws.amazon.com/support/
 - **Anthropic Support**: support@anthropic.com
-- **Project Documentation**: [README.md](README.md), [prd.md](prd.md)
-- **Deployment Guide**: [DEPLOYMENT.md](DEPLOYMENT.md)
+- **Initial Setup**: [DEPLOYMENT.md](DEPLOYMENT.md) - For first-time deployment
+- **Project Overview**: [README.md](README.md)
 
 ---
 
-**Last Updated**: October 27, 2025
-**Changes**: Updated for simplified quote system using pre-drafted 365-day database
+**Last Updated**: November 10, 2025
+**Changes**: Enhanced Lambda deployment workflow documentation and consolidated duplication from deleted LAMBDA_DEPLOYMENT_GUIDE.md
