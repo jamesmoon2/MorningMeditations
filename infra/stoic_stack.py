@@ -14,6 +14,7 @@ from aws_cdk import (
     aws_events_targets as targets,
     aws_iam as iam,
     aws_logs as logs,
+    aws_apigateway as apigateway,
     CfnOutput
 )
 from constructs import Construct
@@ -100,6 +101,94 @@ class StoicStack(Stack):
         # Add Lambda as target
         rule.add_target(targets.LambdaFunction(lambda_fn))
 
+        # ===== API Lambda Function =====
+        api_lambda_fn = lambda_.Function(
+            self, "ReflectionApiHandler",
+            function_name="ReflectionApiHandler",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="api_handler.lambda_handler",
+            code=lambda_.Code.from_asset("lambda_linux"),
+            timeout=Duration.seconds(10),
+            memory_size=128,
+            environment={
+                "BUCKET_NAME": bucket.bucket_name,
+            },
+            log_retention=logs.RetentionDays.ONE_WEEK,
+            description="API handler for serving daily stoic reflections"
+        )
+
+        # Grant API Lambda read-only access to S3 bucket
+        bucket.grant_read(api_lambda_fn)
+
+        # ===== API Gateway =====
+        api = apigateway.RestApi(
+            self, "ReflectionApi",
+            rest_api_name="Morning Reflections API",
+            description="Public API for accessing daily stoic reflections",
+            deploy_options=apigateway.StageOptions(
+                stage_name="prod",
+                throttling_burst_limit=10,  # Max concurrent requests
+                throttling_rate_limit=5,    # Requests per second
+                logging_level=apigateway.MethodLoggingLevel.INFO,
+                data_trace_enabled=True,
+                metrics_enabled=True
+            ),
+            default_cors_preflight_options=apigateway.CorsOptions(
+                allow_origins=["*"],
+                allow_methods=["GET", "OPTIONS"],
+                allow_headers=["Content-Type", "X-Amz-Date", "Authorization", "X-Api-Key"],
+                max_age=Duration.hours(1)
+            ),
+            endpoint_types=[apigateway.EndpointType.REGIONAL]
+        )
+
+        # Create Lambda integration
+        api_integration = apigateway.LambdaIntegration(
+            api_lambda_fn,
+            proxy=True,
+            integration_responses=[
+                apigateway.IntegrationResponse(
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": "'*'"
+                    }
+                )
+            ]
+        )
+
+        # Create /reflection resource
+        reflection_resource = api.root.add_resource("reflection")
+
+        # Add /reflection/today endpoint
+        today_resource = reflection_resource.add_resource("today")
+        today_resource.add_method(
+            "GET",
+            api_integration,
+            method_responses=[
+                apigateway.MethodResponse(
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": True
+                    }
+                )
+            ]
+        )
+
+        # Add /reflection/{date} endpoint
+        date_resource = reflection_resource.add_resource("{date}")
+        date_resource.add_method(
+            "GET",
+            api_integration,
+            method_responses=[
+                apigateway.MethodResponse(
+                    status_code="200",
+                    response_parameters={
+                        "method.response.header.Access-Control-Allow-Origin": True
+                    }
+                )
+            ]
+        )
+
         # ===== CloudFormation Outputs =====
         CfnOutput(
             self, "BucketName",
@@ -129,7 +218,30 @@ class StoicStack(Stack):
             export_name=f"{self.stack_name}-EventRuleName"
         )
 
+        CfnOutput(
+            self, "ApiUrl",
+            value=api.url,
+            description="API Gateway endpoint URL",
+            export_name=f"{self.stack_name}-ApiUrl"
+        )
+
+        CfnOutput(
+            self, "ApiTodayEndpoint",
+            value=f"{api.url}reflection/today",
+            description="Endpoint for today's reflection",
+            export_name=f"{self.stack_name}-ApiTodayEndpoint"
+        )
+
+        CfnOutput(
+            self, "ApiDateEndpoint",
+            value=f"{api.url}reflection/{{date}}",
+            description="Endpoint for specific date reflection (replace {{date}} with YYYY-MM-DD)",
+            export_name=f"{self.stack_name}-ApiDateEndpoint"
+        )
+
         # Store references for potential use
         self.bucket = bucket
         self.lambda_function = lambda_fn
         self.event_rule = rule
+        self.api_lambda_function = api_lambda_fn
+        self.api = api

@@ -11,16 +11,33 @@ graph TB
             EB[EventBridge Rule<br/>DailyStoicTrigger<br/>cron: 0 14 * * ? *<br/>6:00 AM PST / 7:00 AM PDT]
         end
 
+        subgraph "API Layer"
+            APIGW[API Gateway REST API<br/>Morning Reflections API<br/>Regional Endpoint<br/>CORS Enabled]
+
+            subgraph "API Endpoints"
+                Today[GET /reflection/today]
+                DateEndpoint[GET /reflection/{date}]
+            end
+        end
+
         subgraph "Compute Layer"
             Lambda[AWS Lambda Function<br/>DailyStoicSender<br/>Python 3.12 Runtime<br/>256MB Memory / 60s Timeout]
 
-            subgraph "Lambda Modules"
+            APILambda[AWS Lambda Function<br/>ReflectionApiHandler<br/>Python 3.12 Runtime<br/>128MB Memory / 10s Timeout]
+
+            subgraph "Email Lambda Modules"
                 Handler[handler.py<br/>lambda_handler]
                 Themes[themes.py<br/>get_monthly_theme]
                 QuoteLoader[quote_loader.py<br/>QuoteLoader class]
                 Tracker[quote_tracker.py<br/>QuoteTracker class]
                 Anthropic[anthropic_client.py<br/>generate_reflection_only]
                 Formatter[email_formatter.py<br/>format_html_email]
+            end
+
+            subgraph "API Lambda Modules"
+                APIHandler[api_handler.py<br/>lambda_handler]
+                APIThemes[themes.py<br/>get_monthly_theme]
+                APITracker[quote_tracker.py<br/>QuoteTracker class]
             end
         end
 
@@ -40,6 +57,7 @@ graph TB
 
         subgraph "Monitoring Layer"
             CW[CloudWatch Logs<br/>/aws/lambda/DailyStoicSender<br/>7-day retention]
+            CWAPI[CloudWatch Logs<br/>/aws/lambda/ReflectionApiHandler<br/>7-day retention]
         end
     end
 
@@ -51,7 +69,11 @@ graph TB
         Gmail[Gmail Inbox<br/>jamesmoon2@gmail.com<br/>+ Other Recipients]
     end
 
-    %% Flow connections
+    subgraph "API Consumers"
+        Hardware[Hardware Device<br/>IoT Display<br/>Mobile App]
+    end
+
+    %% Email Flow connections
     EB -->|Scheduled Trigger| Lambda
     Lambda -->|Read| QuotesDB
     Lambda -->|Read| History
@@ -63,12 +85,20 @@ graph TB
     SES -->|HTML + Plain Text| Gmail
     Lambda -->|Log Events| CW
 
+    %% API Flow connections
+    Hardware -->|HTTPS GET| APIGW
+    APIGW -->|Invoke| APILambda
+    APILambda -->|Read| History
+    APILambda -->|Return JSON| APIGW
+    APIGW -->|JSON Response| Hardware
+    APILambda -->|Log Events| CWAPI
+
     %% Storage connections
     S3 -.->|Contains| QuotesDB
     S3 -.->|Contains| History
     S3 -.->|Contains| Recipients
 
-    %% Module connections
+    %% Module connections for Email Lambda
     Lambda -.->|Orchestrates| Handler
     Handler -.->|Uses| Themes
     Handler -.->|Uses| QuoteLoader
@@ -76,13 +106,26 @@ graph TB
     Handler -.->|Uses| Anthropic
     Handler -.->|Uses| Formatter
 
+    %% Module connections for API Lambda
+    APILambda -.->|Orchestrates| APIHandler
+    APIHandler -.->|Uses| APIThemes
+    APIHandler -.->|Uses| APITracker
+
+    %% API Gateway endpoint connections
+    APIGW -.->|Routes| Today
+    APIGW -.->|Routes| DateEndpoint
+
     style EB fill:#FF9900
     style Lambda fill:#FF9900
+    style APILambda fill:#FF9900
+    style APIGW fill:#E67E22
     style S3 fill:#569A31
     style SES fill:#DD344C
     style CW fill:#FF9900
+    style CWAPI fill:#FF9900
     style AnthropicAPI fill:#D4B5A0
     style Gmail fill:#4285F4
+    style Hardware fill:#9B59B6
 ```
 
 ## Detailed Data Flow Sequence
@@ -172,6 +215,60 @@ sequenceDiagram
     Lambda-->>EB: Return {statusCode: 200, body: {success_count, date, theme, attribution}}
 ```
 
+### API Request Flow Sequence
+
+```mermaid
+sequenceDiagram
+    participant Client as Hardware Device<br/>API Client
+    participant APIGW as API Gateway<br/>Regional Endpoint
+    participant Lambda as Lambda Function<br/>api_handler.lambda_handler()
+    participant S3 as S3 Bucket
+    participant Themes as themes.py<br/>get_monthly_theme()
+    participant CW as CloudWatch Logs
+
+    Note over Client: User requests today's<br/>reflection or specific date
+
+    Client->>APIGW: GET /reflection/today<br/>or GET /reflection/{date}
+    APIGW->>APIGW: Check rate limits<br/>(10 burst, 5 req/sec)
+    APIGW->>Lambda: Invoke with event<br/>{httpMethod, path, pathParameters}
+    Lambda->>CW: Log: Incoming request
+
+    Note over Lambda: Step 1: Parse Request
+    Lambda->>Lambda: Extract path (today or {date})
+    Lambda->>Lambda: Validate date format (YYYY-MM-DD)
+    alt Invalid Date Format
+        Lambda->>APIGW: {statusCode: 400, error: "Invalid date format"}
+        APIGW->>Client: 400 Bad Request
+    end
+
+    Note over Lambda: Step 2: Load History from S3
+    Lambda->>S3: GET quote_history.json
+    S3-->>Lambda: Return history JSON
+    Lambda->>CW: Log: Loaded N quotes from history
+
+    Note over Lambda: Step 3: Find Reflection
+    Lambda->>Lambda: find_reflection_by_date(target_date)
+    alt Reflection Not Found
+        Lambda->>CW: Log: No reflection found for date
+        Lambda->>APIGW: {statusCode: 404, error: "Reflection not found"}
+        APIGW->>Client: 404 Not Found
+    end
+
+    Note over Lambda: Step 4: Format Response
+    Lambda->>Lambda: Extract date from reflection
+    Lambda->>Themes: get_monthly_theme(month)
+    Themes-->>Lambda: Return {name, description}
+    Lambda->>Lambda: Build JSON response<br/>{date, quote, attribution, theme, reflection, monthlyTheme}
+
+    Note over Lambda: Step 5: Return Success
+    Lambda->>CW: Log: Successfully retrieved reflection
+    Lambda->>APIGW: {statusCode: 200, body: JSON, headers: CORS}
+    APIGW->>APIGW: Add CORS headers
+    APIGW->>Client: 200 OK + JSON reflection
+
+    Note over Client: Hardware device<br/>parses and displays<br/>quote + reflection
+```
+
 ## Service Endpoints & Configuration
 
 ### AWS Services
@@ -179,16 +276,33 @@ sequenceDiagram
 | Service | Endpoint/Resource | Configuration |
 |---------|------------------|---------------|
 | **EventBridge** | `events.us-west-2.amazonaws.com` | Rule: `DailyStoicTrigger`<br/>Schedule: `cron(0 14 * * ? *)` |
-| **Lambda** | `lambda.us-west-2.amazonaws.com` | Function: `DailyStoicSender`<br/>Runtime: `python3.12`<br/>Handler: `handler.lambda_handler` |
-| **S3** | `s3.us-west-2.amazonaws.com` | Bucket: Auto-generated name<br/>Objects: `quote_history.json`, `recipients.json` |
+| **Lambda (Email)** | `lambda.us-west-2.amazonaws.com` | Function: `DailyStoicSender`<br/>Runtime: `python3.12`<br/>Handler: `handler.lambda_handler`<br/>Memory: 256 MB<br/>Timeout: 60 seconds |
+| **Lambda (API)** | `lambda.us-west-2.amazonaws.com` | Function: `ReflectionApiHandler`<br/>Runtime: `python3.12`<br/>Handler: `api_handler.lambda_handler`<br/>Memory: 128 MB<br/>Timeout: 10 seconds |
+| **API Gateway** | `execute-api.us-west-2.amazonaws.com` | API Name: `Morning Reflections API`<br/>Stage: `prod`<br/>Type: REST API (Regional)<br/>Rate Limit: 5 req/sec<br/>Burst: 10 concurrent |
+| **S3** | `s3.us-west-2.amazonaws.com` | Bucket: Auto-generated name<br/>Objects: `quote_history.json`, `recipients.json`, `stoic_quotes_365_days.json` |
 | **SES** | `email.us-west-2.amazonaws.com` | Domain: `jamescmooney.com`<br/>Sender: `reflections@jamescmooney.com`<br/>API: `SendEmail` |
-| **CloudWatch Logs** | `logs.us-west-2.amazonaws.com` | Log Group: `/aws/lambda/DailyStoicSender`<br/>Retention: 7 days |
+| **CloudWatch Logs** | `logs.us-west-2.amazonaws.com` | Log Groups:<br/>`/aws/lambda/DailyStoicSender`<br/>`/aws/lambda/ReflectionApiHandler`<br/>Retention: 7 days |
 
 ### External API Endpoints
 
 | Service | Endpoint | Method | Request Details |
 |---------|----------|--------|-----------------|
 | **Anthropic Messages API** | `https://api.anthropic.com/v1/messages` | POST | **Model**: `claude-sonnet-4-5-20250929`<br/>**Max Tokens**: 2000<br/>**Temperature**: 1.0<br/>**Timeout**: 25 seconds<br/>**Headers**: `x-api-key`, `anthropic-version: 2023-06-01` |
+
+### Public API Endpoints
+
+| Endpoint | Method | Description | Response Format |
+|----------|--------|-------------|-----------------|
+| **`/reflection/today`** | GET | Returns today's reflection | JSON: `{date, quote, attribution, theme, reflection, monthlyTheme}` |
+| **`/reflection/{date}`** | GET | Returns reflection for specific date (YYYY-MM-DD) | JSON: `{date, quote, attribution, theme, reflection, monthlyTheme}` |
+
+**Base URL**: `https://{api-id}.execute-api.us-west-2.amazonaws.com/prod/`
+
+**Authentication**: None (public access)
+
+**Rate Limiting**: 10 burst, 5 requests/second
+
+**CORS**: Enabled for all origins (`*`)
 
 ### S3 Data Objects
 
@@ -243,6 +357,8 @@ sequenceDiagram
 
 ## Lambda Function Module Architecture
 
+### Email Lambda (DailyStoicSender)
+
 ```mermaid
 graph LR
     subgraph "Lambda Handler Entry Point"
@@ -287,6 +403,39 @@ graph LR
     style Boto3S3 fill:#569A31
     style Boto3SES fill:#DD344C
     style AnthropicSDK fill:#D4B5A0
+```
+
+### API Lambda (ReflectionApiHandler)
+
+```mermaid
+graph LR
+    subgraph "Lambda Handler Entry Point"
+        APIMain[api_handler.py<br/>lambda_handler]
+    end
+
+    subgraph "Core Modules"
+        APIT[themes.py<br/>MONTHLY_THEMES dict<br/>get_monthly_theme]
+        APIQT[quote_tracker.py<br/>QuoteTracker class<br/>load_history (read-only)]
+    end
+
+    subgraph "Helper Functions"
+        Parse[create_response<br/>find_reflection_by_date<br/>format_reflection_response]
+    end
+
+    subgraph "AWS SDK Clients"
+        APIBoto3S3[boto3.client: s3<br/>get_object (read-only)]
+    end
+
+    APIMain -->|Import & Call| APIT
+    APIMain -->|Import & Call| APIQT
+    APIMain -->|Uses| Parse
+    APIQT -->|Uses| APIBoto3S3
+
+    style APIMain fill:#FF9900
+    style APIT fill:#4A90E2
+    style APIQT fill:#4A90E2
+    style Parse fill:#9B59B6
+    style APIBoto3S3 fill:#569A31
 ```
 
 ## Data Flow by Step
@@ -393,45 +542,83 @@ Response:
 
 ## IAM Permissions Required
 
+### Email Lambda Execution Role (DailyStoicSender)
+
 ```json
 {
-  "Lambda Execution Role": {
-    "S3 Permissions": [
-      "s3:GetObject",
-      "s3:PutObject"
-    ],
-    "Resources": [
-      "arn:aws:s3:::{bucket-name}/*"
-    ],
-    "SES Permissions": [
-      "ses:SendEmail",
-      "ses:SendRawEmail"
-    ],
-    "Resources": ["*"],
-    "CloudWatch Logs": [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-  }
+  "S3 Permissions": [
+    "s3:GetObject",
+    "s3:PutObject"
+  ],
+  "Resources": [
+    "arn:aws:s3:::{bucket-name}/*"
+  ],
+  "SES Permissions": [
+    "ses:SendEmail",
+    "ses:SendRawEmail"
+  ],
+  "Resources": ["*"],
+  "CloudWatch Logs": [
+    "logs:CreateLogGroup",
+    "logs:CreateLogStream",
+    "logs:PutLogEvents"
+  ]
 }
 ```
 
+### API Lambda Execution Role (ReflectionApiHandler)
+
+```json
+{
+  "S3 Permissions": [
+    "s3:GetObject"
+  ],
+  "Resources": [
+    "arn:aws:s3:::{bucket-name}/quote_history.json"
+  ],
+  "CloudWatch Logs": [
+    "logs:CreateLogGroup",
+    "logs:CreateLogStream",
+    "logs:PutLogEvents"
+  ]
+}
+```
+
+**Note**: API Lambda has read-only access to S3 (no write permissions)
+
 ## Cost Breakdown by Endpoint
+
+### Base Email Service
 
 | Service/Endpoint | Monthly Usage | Unit Cost | Monthly Cost |
 |-----------------|---------------|-----------|--------------|
 | EventBridge Rule Invocations | 30 triggers | Free tier | $0.00 |
-| Lambda Invocations | 30 executions × 10s | Free tier | $0.00 |
+| Lambda (Email) Invocations | 30 executions × 10s | Free tier | $0.00 |
 | S3 GET Requests | 60 requests | $0.0004/1K | $0.00 |
 | S3 PUT Requests | 30 requests | $0.005/1K | $0.00 |
 | S3 Storage | ~1 MB | $0.023/GB | $0.00 |
 | SES SendEmail API | 30 emails | $0.10/1K | $0.003 |
 | Anthropic Messages API | 30 calls × 2K tokens | $3.00/1M tokens | $0.18 |
 | CloudWatch Logs | ~50 MB | Free tier (5GB) | $0.00 |
-| **Total** | | | **~$0.18/month** |
+| **Subtotal** | | | **~$0.18/month** |
+
+### API Service (at <100 calls/day = ~3,000 calls/month)
+
+| Service/Endpoint | Monthly Usage | Unit Cost | Monthly Cost |
+|-----------------|---------------|-----------|--------------|
+| API Gateway REST API | 3,000 requests | $3.50/1M (free tier) | $0.00 |
+| Lambda (API) Invocations | 3,000 executions × 0.1s | $0.20/1M requests | $0.00 |
+| S3 GET Requests (API) | 3,000 requests | $0.0004/1K | $0.001 |
+| CloudWatch Logs (API) | ~10 MB | Free tier (5GB) | $0.00 |
+| **Subtotal** | | | **~$0.001/month** |
+
+### Total Combined Cost
+
+| **Total** | | | **~$0.181/month** |
 
 ## Performance Metrics
+
+### Email Lambda (DailyStoicSender)
 
 | Metric | Typical Value | Maximum |
 |--------|---------------|---------|
@@ -442,6 +629,17 @@ Response:
 | **SES Delivery Time** | 30-120 seconds | - |
 | **End-to-End Time** | 10-15 seconds | - |
 | **Lambda Memory Usage** | 100-150 MB | 256 MB (allocated) |
+
+### API Lambda (ReflectionApiHandler)
+
+| Metric | Typical Value | Maximum |
+|--------|---------------|---------|
+| **Lambda Execution Time** | 50-150 ms | 10 seconds (timeout) |
+| **S3 Read Latency** | 50-100 ms | - |
+| **API Gateway Latency** | 10-50 ms | - |
+| **Total API Response Time** | 100-200 ms | - |
+| **Lambda Memory Usage** | 50-80 MB | 128 MB (allocated) |
+| **Cold Start Time** | 1-2 seconds | - |
 
 ## Error Handling & Retry Logic
 
@@ -512,14 +710,24 @@ The system uses a predefined theme for each month (themes.py:17-66):
 graph TB
     subgraph "Secrets Management"
         CDK[cdk.json context<br/>anthropic_api_key]
-        Env[Lambda Environment Variables<br/>ANTHROPIC_API_KEY]
+        EmailEnv[Email Lambda Env Vars<br/>ANTHROPIC_API_KEY]
+        APIEnv[API Lambda Env Vars<br/>BUCKET_NAME only]
     end
 
     subgraph "AWS IAM"
-        Role[Lambda Execution Role]
+        EmailRole[Email Lambda Execution Role<br/>Read/Write S3<br/>Send SES Email]
+        APIRole[API Lambda Execution Role<br/>Read-Only S3]
         S3Policy[S3 Read/Write Policy]
+        S3ReadPolicy[S3 Read-Only Policy]
         SESPolicy[SES Send Email Policy]
         CWPolicy[CloudWatch Logs Policy]
+    end
+
+    subgraph "API Security"
+        APIGW[API Gateway<br/>Public Access]
+        RateLimit[Rate Limiting<br/>10 burst / 5 req/sec]
+        CORS[CORS Enabled<br/>All Origins]
+        NoAuth[No Authentication<br/>Read-Only Access]
     end
 
     subgraph "Network Security"
@@ -533,22 +741,49 @@ graph TB
         DomainVerification[Domain Verification<br/>jamescmooney.com]
     end
 
-    CDK -->|Deploy| Env
-    Env -->|Used By| Lambda
-    Lambda -->|Assumes| Role
-    Role -->|Attached| S3Policy
-    Role -->|Attached| SESPolicy
-    Role -->|Attached| CWPolicy
+    CDK -->|Deploy| EmailEnv
+    CDK -->|Deploy| APIEnv
+    EmailEnv -->|Used By| EmailLambda[Email Lambda]
+    APIEnv -->|Used By| APILambda[API Lambda]
+
+    EmailLambda -->|Assumes| EmailRole
+    APILambda -->|Assumes| APIRole
+
+    EmailRole -->|Attached| S3Policy
+    EmailRole -->|Attached| SESPolicy
+    EmailRole -->|Attached| CWPolicy
+
+    APIRole -->|Attached| S3ReadPolicy
+    APIRole -->|Attached| CWPolicy
 
     S3Policy -->|Protects| S3Encryption
     S3Policy -->|Enforces| S3Block
 
+    APIGW -->|Invokes| APILambda
+    APIGW -.->|Configured| RateLimit
+    APIGW -.->|Configured| CORS
+    APIGW -.->|Configured| NoAuth
+
     style CDK fill:#E67E22
-    style Env fill:#27AE60
-    style Role fill:#3498DB
+    style EmailEnv fill:#27AE60
+    style APIEnv fill:#27AE60
+    style EmailRole fill:#3498DB
+    style APIRole fill:#3498DB
     style S3Encryption fill:#27AE60
     style DKIM fill:#27AE60
+    style APIGW fill:#E67E22
+    style RateLimit fill:#F39C12
+    style NoAuth fill:#E74C3C
 ```
+
+### API Security Notes
+
+- **Public Access**: The API is intentionally public (no authentication) for hardware device access
+- **Read-Only**: API Lambda has only S3 read permissions - cannot modify data
+- **Rate Limiting**: API Gateway throttles to 10 burst, 5 req/sec to prevent abuse
+- **CORS**: Enabled for all origins to support hardware devices and web clients
+- **Data Exposure**: Only serves pre-generated reflections (no sensitive data)
+- **Principle of Least Privilege**: API Lambda role has minimal permissions (read-only S3)
 
 ## Monitoring & Logging Points
 
@@ -572,8 +807,22 @@ graph TB
 | Complete | 150-152 | "Email sending complete. Success/Failed counts" | INFO |
 | Fatal Error | 167 | "Fatal error in lambda_handler: {error}" | ERROR |
 
+### CloudWatch Log Events (api_handler.py)
+
+| Log Point | Message | Level |
+|-----------|---------|-------|
+| Request Received | "Received {method} request to {path}" | INFO |
+| History Loaded | "Loaded history with {n} quotes" | INFO |
+| Reflection Found | "Successfully retrieved reflection for {date}" | INFO |
+| Reflection Not Found | "No reflection found for date: {date}" | INFO |
+| Invalid Date | "Invalid date format: {date}" | WARNING |
+| CORS Preflight | "CORS preflight successful" | INFO |
+| Unexpected Error | "Unexpected error: {error}" | ERROR |
+
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2025-10-27
-**Changes**: Updated for simplified quote system using pre-drafted 365-day database
+**Document Version**: 3.0
+**Last Updated**: 2025-11-12
+**Changes**: Added public REST API (API Gateway + Lambda) for hardware device integration
+
+**Previous Version**: 2.0 (2025-10-27) - Updated for simplified quote system using pre-drafted 365-day database
