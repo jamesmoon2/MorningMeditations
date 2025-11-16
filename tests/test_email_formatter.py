@@ -23,7 +23,11 @@ class TestEmailFormatter:
         """Test HTML email generation."""
         quote = "You have power over your mind - not outside events."
         attribution = "Marcus Aurelius - Meditations 6.8"
-        reflection = "This is a test reflection about the power of the mind."
+        reflection = {
+            "understanding": "This is the understanding section about the power of the mind.",
+            "connection": "This is the connection section about how this applies to modern life.",
+            "practice": "This is the practice section with a specific action to take today."
+        }
         theme = "Discipline and Self-Improvement"
 
         html = format_html_email(quote, attribution, reflection, theme)
@@ -31,7 +35,9 @@ class TestEmailFormatter:
         # Check that all elements are present
         assert quote in html
         assert attribution in html
-        assert reflection in html
+        assert reflection["understanding"] in html
+        assert reflection["connection"] in html
+        assert reflection["practice"] in html
         assert theme in html
 
         # Check for HTML structure
@@ -40,19 +46,38 @@ class TestEmailFormatter:
         assert "</html>" in html
         assert "<style>" in html
 
+        # Check for section headers
+        assert "Understanding" in html
+        assert "Connection" in html
+        assert "Practice" in html
+
+        # Check for progress indicator
+        assert "Day" in html
+
     def test_format_plain_text_email(self):
         """Test plain text email generation."""
         quote = "The impediment to action advances action."
         attribution = "Marcus Aurelius - Meditations 5.20"
-        reflection = "Test reflection text."
+        reflection = {
+            "understanding": "Test understanding text.",
+            "connection": "Test connection text.",
+            "practice": "Test practice text."
+        }
 
         plain = format_plain_text_email(quote, attribution, reflection)
 
         # Check that all elements are present
         assert quote in plain
         assert attribution in plain
-        assert reflection in plain
+        assert reflection["understanding"] in plain
+        assert reflection["connection"] in plain
+        assert reflection["practice"] in plain
         assert "MORNING STOIC REFLECTION" in plain
+
+        # Check for section headers
+        assert "UNDERSTANDING" in plain
+        assert "CONNECTION" in plain
+        assert "PRACTICE" in plain
 
     def test_create_email_subject(self):
         """Test email subject creation."""
@@ -66,13 +91,19 @@ class TestEmailFormatter:
         """Test validation with valid content."""
         quote = "Test quote"
         attribution = "Marcus Aurelius - Meditations 2.1"
-        reflection = " ".join(["word"] * 250)  # 250 words
+        reflection = {
+            "understanding": " ".join(["word"] * 50),  # 50 words
+            "connection": " ".join(["word"] * 80),     # 80 words
+            "practice": " ".join(["word"] * 60)        # 60 words (total: 190 words)
+        }
 
         validation = validate_email_content(quote, attribution, reflection)
 
         assert validation["has_quote"] is True
         assert validation["has_attribution"] is True
-        assert validation["has_reflection"] is True
+        assert validation["has_understanding"] is True
+        assert validation["has_connection"] is True
+        assert validation["has_practice"] is True
         assert validation["reflection_min_length"] is True
         assert validation["is_valid"] is True
 
@@ -80,7 +111,11 @@ class TestEmailFormatter:
         """Test validation with too short reflection."""
         quote = "Test quote"
         attribution = "Marcus Aurelius - Meditations 2.1"
-        reflection = "Too short"
+        reflection = {
+            "understanding": "Too short",
+            "connection": "Also short",
+            "practice": "Short"
+        }
 
         validation = validate_email_content(quote, attribution, reflection)
 
@@ -91,7 +126,11 @@ class TestEmailFormatter:
         """Test validation with missing quote."""
         quote = ""
         attribution = "Marcus Aurelius - Meditations 2.1"
-        reflection = " ".join(["word"] * 250)
+        reflection = {
+            "understanding": " ".join(["word"] * 50),
+            "connection": " ".join(["word"] * 80),
+            "practice": " ".join(["word"] * 60)
+        }
 
         validation = validate_email_content(quote, attribution, reflection)
 
@@ -123,7 +162,11 @@ class TestEmailFormatter:
         """Test that special HTML characters are escaped."""
         quote = "<script>alert('test')</script>"
         attribution = "Test & Author"
-        reflection = "Reflection with <tags> & special chars"
+        reflection = {
+            "understanding": "Understanding with <tags>",
+            "connection": "Connection with & special chars",
+            "practice": "Practice with <more> tags"
+        }
         theme = "Test Theme"
 
         html = format_html_email(quote, attribution, reflection, theme)

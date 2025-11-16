@@ -5,6 +5,7 @@ This is the entry point triggered daily by EventBridge to generate and send
 stoic reflections via email.
 """
 
+import calendar
 import json
 import logging
 import os
@@ -112,7 +113,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not reflection:
             raise Exception("Failed to generate reflection from Anthropic API")
 
-        logger.info(f"Generated reflection ({len(reflection)} chars)")
+        # Calculate total length for logging
+        total_length = sum(len(reflection[key]) for key in reflection)
+        logger.info(f"Generated structured reflection ({total_length} chars total)")
+        logger.info(f"  - Understanding: {len(reflection['understanding'])} chars")
+        logger.info(f"  - Connection: {len(reflection['connection'])} chars")
+        logger.info(f"  - Practice: {len(reflection['practice'])} chars")
 
         # Validate content
         validation = validate_email_content(quote, attribution, reflection)
@@ -122,8 +128,11 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # 7. Update history in S3 (for posterity)
         logger.info("Updating quote history...")
 
+        # Convert structured reflection to single string for history storage
+        reflection_text = f"{reflection['understanding']}\n\n{reflection['connection']}\n\n{reflection['practice']}"
+
         # Add today's entry with full reflection
-        history = tracker.add_quote(history, current_date_str, quote, attribution, reflection, theme_name)
+        history = tracker.add_quote(history, current_date_str, quote, attribution, reflection_text, theme_name)
 
         # Cleanup old quotes (keep 400 days for reasonable file size)
         history = tracker.cleanup_old_quotes(history, keep_days=400)
@@ -132,7 +141,16 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(f"History updated. Total entries: {tracker.get_quote_count(history)}")
 
         # 8. Format and send email
-        html_content = format_html_email(quote, attribution, reflection, theme_name)
+        # Calculate day of month and total days in month for progress indicator
+        day_of_month = current_date.day
+        # Get the last day of the current month
+        days_in_month = calendar.monthrange(current_date.year, current_date.month)[1]
+
+        html_content = format_html_email(
+            quote, attribution, reflection, theme_name,
+            day_of_month=day_of_month,
+            days_in_month=days_in_month
+        )
         plain_text = format_plain_text_email(quote, attribution, reflection)
         subject = create_email_subject(theme_name)
 
