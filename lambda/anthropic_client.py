@@ -91,9 +91,20 @@ TONE & STYLE:
 - Feel personal and encouraging, not preachy or didactic
 - Meet readers where they are with empathy and understanding
 
+STRUCTURE:
+Your reflection should be organized into three distinct sections:
+
+1. UNDERSTANDING (40-60 words): Explain the quote's core meaning in accessible, everyday language. What is the philosopher really saying here?
+
+2. CONNECTION (60-80 words): Connect this wisdom to specific 2025 challenges with concrete examples. Think: workplace stress, difficult relationships, major decisions, financial pressures, information overload, social media anxiety, work-life balance, uncertainty, or daily struggles. Make the ancient wisdom feel immediately relevant to modern life.
+
+3. DAILY PRACTICE (50-60 words): Offer a specific micro-practice the reader can apply TODAY. Be concrete and actionable - not generic advice. Examples: "Before your next meeting, take 30 seconds to..." or "Tonight, write down three things..." Give them a clear, simple action they can take within the next 24 hours.
+
 Format your response as JSON:
 {{
-  "reflection": "Your full reflection text here"
+  "understanding": "Your explanation of the quote's meaning (40-60 words)",
+  "connection": "How this applies to 2025 challenges with concrete examples (60-80 words)",
+  "practice": "A specific micro-practice for today (50-60 words)"
 }}
 
 Write the reflection now."""
@@ -101,7 +112,7 @@ Write the reflection now."""
     return prompt
 
 
-def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> str:
+def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> Dict[str, str]:
     """
     Call the Anthropic API to generate a stoic reflection.
 
@@ -111,7 +122,7 @@ def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> str:
         timeout: API call timeout in seconds (default: 25)
 
     Returns:
-        The reflection text
+        Dictionary with keys: understanding, connection, practice
 
     Raises:
         Exception: If API call fails or response is invalid
@@ -149,9 +160,9 @@ def call_anthropic_api(prompt: str, api_key: str, timeout: int = 25) -> str:
         raise
 
 
-def parse_reflection_response(response_text: str) -> str:
+def parse_reflection_response(response_text: str) -> Dict[str, str]:
     """
-    Parse Claude's response and extract the reflection text.
+    Parse Claude's response and extract the structured reflection.
 
     Handles both raw JSON and JSON wrapped in markdown code blocks.
 
@@ -159,10 +170,10 @@ def parse_reflection_response(response_text: str) -> str:
         response_text: Raw response text from Claude
 
     Returns:
-        The reflection text string
+        Dictionary with keys: understanding, connection, practice
 
     Raises:
-        ValueError: If response is invalid or missing reflection field
+        ValueError: If response is invalid or missing required fields
     """
     try:
         # Try to extract JSON from markdown code blocks first
@@ -183,17 +194,26 @@ def parse_reflection_response(response_text: str) -> str:
         # Parse JSON
         data = json.loads(json_str)
 
-        # Validate reflection field
-        if 'reflection' not in data:
-            raise ValueError("Missing required field: reflection")
-        if not data['reflection'] or not isinstance(data['reflection'], str):
-            raise ValueError("Invalid value for field: reflection")
+        # Validate required fields
+        required_fields = ['understanding', 'connection', 'practice']
+        for field in required_fields:
+            if field not in data:
+                raise ValueError(f"Missing required field: {field}")
+            if not data[field] or not isinstance(data[field], str):
+                raise ValueError(f"Invalid value for field: {field}")
 
         logger.info("Successfully parsed Anthropic response")
-        reflection_length = len(data['reflection'])
-        logger.info(f"Reflection length: {reflection_length} characters")
+        total_length = sum(len(data[field]) for field in required_fields)
+        logger.info(f"Total reflection length: {total_length} characters")
+        logger.info(f"Understanding: {len(data['understanding'])} chars, "
+                   f"Connection: {len(data['connection'])} chars, "
+                   f"Practice: {len(data['practice'])} chars")
 
-        return data['reflection'].strip()
+        return {
+            'understanding': data['understanding'].strip(),
+            'connection': data['connection'].strip(),
+            'practice': data['practice'].strip()
+        }
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON from response: {e}")
@@ -243,7 +263,7 @@ def generate_reflection_only(
     theme: str,
     api_key: str,
     previous_reflections: Optional[List[Dict[str, str]]] = None
-) -> Optional[str]:
+) -> Optional[Dict[str, str]]:
     """
     Generate a reflection based on a provided quote.
 
@@ -255,7 +275,7 @@ def generate_reflection_only(
         previous_reflections: List of previous quotes and reflections from this month
 
     Returns:
-        The reflection text, or None if generation fails
+        Dictionary with keys: understanding, connection, practice, or None if generation fails
     """
     try:
         # Validate attribution format
