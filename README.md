@@ -9,6 +9,7 @@ An automated service that delivers daily stoic philosophical reflections via ema
 ## Features
 
 - **Daily Delivery**: Automated emails at 6:00 AM PT
+- **Public API**: REST API for accessing reflections (perfect for hardware devices)
 - **Curated Quotes**: 365 pre-selected classical stoic quotes (one for each day)
 - **AI-Generated Reflections**: Fresh, unique reflections using Claude Sonnet 4.5
 - **Monthly Themes**: 12 distinct themes throughout the year
@@ -22,11 +23,16 @@ An automated service that delivers daily stoic philosophical reflections via ema
 ```
 AWS Cloud
 ├── EventBridge (Daily 6 AM PT trigger)
-├── Lambda (Python 3.12)
+├── Lambda - DailyStoicSender (Python 3.12)
 │   ├── Load daily quote from 365-day database
 │   ├── Generate reflection via Anthropic API
 │   ├── Archive to quote history in S3
 │   └── Send formatted emails via SES
+├── API Gateway (Public REST API)
+│   ├── GET /reflection/today
+│   └── GET /reflection/{date}
+├── Lambda - ReflectionApiHandler (Python 3.12)
+│   └── Serve reflections from S3 (read-only)
 ├── S3 (State management)
 │   ├── stoic_quotes_365_days.json (365 curated quotes)
 │   ├── quote_history.json (archival record)
@@ -36,34 +42,76 @@ AWS Cloud
 
 ## Tech Stack
 
-- **Infrastructure**: AWS (Lambda, EventBridge, SES, S3)
+- **Infrastructure**: AWS (Lambda, API Gateway, EventBridge, SES, S3)
 - **IaC**: AWS CDK with Python
 - **Runtime**: Python 3.12
 - **AI Model**: Anthropic Claude Sonnet 4.5
 - **Email**: HTML via Amazon SES
+- **API**: REST API via Amazon API Gateway
 
 ## Project Structure
 
 ```
 daily-stoic-reflection/
 ├── lambda/              # Lambda function code
-│   ├── handler.py       # Main entry point
+│   ├── handler.py       # Main entry point (daily email)
+│   ├── api_handler.py   # API endpoint handler
 │   ├── quote_loader.py  # Loads daily quotes from 365-day database
 │   ├── anthropic_client.py  # Generates reflections via API
 │   ├── email_formatter.py
 │   ├── quote_tracker.py  # Archives history
 │   └── themes.py
 ├── infra/              # AWS CDK infrastructure
-│   └── stoic_stack.py
+│   └── stoic_stack.py  # Includes API Gateway + Lambda
 ├── config/             # Configuration files
 │   ├── stoic_quotes_365_days.json  # 365 curated quotes
 │   ├── recipients.json
 │   └── quote_history.json  # Historical archive
 ├── tests/              # Unit tests
+├── build_lambda.sh     # Build Lambda deployment package
 ├── validate_quotes.py  # Validates 365-day database
 ├── test_quote_loader.py  # Tests quote loading
+├── API_DOCUMENTATION.md  # API reference
+├── API_DEPLOYMENT_GUIDE.md  # API deployment guide
 └── app.py              # CDK app entry point
 ```
+
+## API Access
+
+The service provides a public REST API for accessing reflections programmatically - perfect for hardware devices, mobile apps, or web integrations.
+
+### Endpoints
+
+- `GET /reflection/today` - Returns today's reflection
+- `GET /reflection/{date}` - Returns reflection for a specific date (YYYY-MM-DD)
+
+### Response Format
+
+```json
+{
+  "date": "2025-01-15",
+  "quote": "You have power over your mind - not outside events...",
+  "attribution": "Marcus Aurelius, Meditations, Book 5",
+  "theme": "Self-Mastery",
+  "reflection": "In our modern world...",
+  "monthlyTheme": {
+    "name": "Discipline and Self-Improvement",
+    "description": "Focus on building habits, self-control, and starting fresh"
+  }
+}
+```
+
+### Features
+
+- Public access (no authentication required)
+- CORS enabled for web/hardware device access
+- Rate limiting: 10 burst, 5 req/sec (more than sufficient for <100 calls/day)
+- Fast response times (~100ms) - reads from pre-generated cache
+- Negligible cost (~$0.00-$0.01/month at low volume)
+
+For complete API documentation, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
+
+For API deployment instructions, see [API_DEPLOYMENT_GUIDE.md](API_DEPLOYMENT_GUIDE.md).
 
 ## Setup and Deployment
 
@@ -109,6 +157,8 @@ See [MAINTENANCE.md](MAINTENANCE.md) for:
 ## Documentation
 
 - [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide
+- [API_DEPLOYMENT_GUIDE.md](API_DEPLOYMENT_GUIDE.md) - API deployment guide
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - API reference and usage
 - [MAINTENANCE.md](MAINTENANCE.md) - Ongoing maintenance and operations
 - [prd.md](prd.md) - Product requirements
 - [projectplan.md](projectplan.md) - Implementation plan
