@@ -49,19 +49,24 @@ def format_html_email(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
     <title>Morning Stoic Reflection</title>
     <style>
+        :root {{
+            color-scheme: light dark;
+        }}
         body {{
             font-family: Georgia, 'Times New Roman', serif;
             line-height: 1.7;
-            color: #2c3e50;
+            color: #333333;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f6fa;
         }}
         .container {{
-            background-color: white;
+            background-color: #ffffff;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
@@ -80,7 +85,7 @@ def format_html_email(
             letter-spacing: -0.5px;
         }}
         .theme {{
-            color: #7f8c8d;
+            color: #555555;
             font-style: italic;
             font-size: 15px;
             margin-top: 8px;
@@ -89,18 +94,18 @@ def format_html_email(
         .progress {{
             margin-top: 12px;
             font-size: 13px;
-            color: #95a5a6;
+            color: #666666;
         }}
         .progress-bar {{
             height: 4px;
-            background-color: #ecf0f1;
+            background-color: #e0e0e0;
             border-radius: 2px;
             margin-top: 6px;
             overflow: hidden;
         }}
         .progress-fill {{
             height: 100%;
-            background: linear-gradient(90deg, #3498db, #2980b9);
+            background-color: #1e6091;
             width: {progress_percent}%;
             border-radius: 2px;
         }}
@@ -109,7 +114,7 @@ def format_html_email(
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #95a5a6;
+            color: #666666;
             margin: 30px 0 12px 0;
         }}
         .quote-section {{
@@ -118,68 +123,67 @@ def format_html_email(
         .quote {{
             font-size: 20px;
             font-style: italic;
-            color: #2c3e50;
+            color: #1a1a1a;
             margin: 0;
             padding: 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            background: linear-gradient(to right, #f8f9fa, #e9ecef);
-            border-left: 5px solid #3498db;
+            background-color: #e8e8e8;
+            border-left: 5px solid #1e6091;
             border-radius: 4px;
             line-height: 1.8;
         }}
         .attribution {{
             text-align: right;
-            color: #7f8c8d;
+            color: #444444;
             font-size: 14px;
             margin-top: 12px;
             font-weight: 500;
         }}
         .reflection-section {{
-            background-color: #fafbfc;
+            background-color: #f5f5f5;
             padding: 25px;
             border-radius: 6px;
             margin-bottom: 20px;
-            border-left: 4px solid #e0e0e0;
+            border-left: 4px solid #cccccc;
         }}
         .reflection-section.understanding {{
-            border-left-color: #3498db;
+            border-left-color: #1e6091;
         }}
         .reflection-section.connection {{
-            border-left-color: #9b59b6;
+            border-left-color: #6b3d7a;
         }}
         .reflection-section.practice {{
-            border-left-color: #27ae60;
-            background-color: #f0fdf4;
+            border-left-color: #1d7a3c;
+            background-color: #e8f5e9;
         }}
         .section-title {{
             font-size: 16px;
             font-weight: 700;
-            color: #2c3e50;
+            color: #333333;
             margin: 0 0 12px 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }}
         .section-title.understanding {{
-            color: #2980b9;
+            color: #155a7a;
         }}
         .section-title.connection {{
-            color: #8e44ad;
+            color: #5c2d6d;
         }}
         .section-title.practice {{
-            color: #229954;
+            color: #166b34;
         }}
         .section-content {{
             font-size: 16px;
             line-height: 1.8;
-            color: #34495e;
+            color: #333333;
             margin: 0;
         }}
         .footer {{
             margin-top: 45px;
             padding-top: 25px;
-            border-top: 2px solid #ecf0f1;
+            border-top: 2px solid #e0e0e0;
             text-align: center;
             font-size: 12px;
-            color: #95a5a6;
+            color: #666666;
         }}
         @media only screen and (max-width: 600px) {{
             .container {{
